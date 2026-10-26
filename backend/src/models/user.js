@@ -4,8 +4,8 @@ const userSchema = new Schema({
     firstName: {
         type: String,
         required: true,
-        minLgth: 2,
-        MaxLength: 20
+        minLegth: 2,
+        maxLength: 20
     },
     lastName: {
         type: String,

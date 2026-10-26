@@ -19,7 +19,7 @@ app.use("/user", authRouter);
 const initalizeConnection = async () => {
     try {
         await main();
-        await redisClient.connect()
+        // await redisClient.connect()
         app.listen(process.env.PORT, () => {
             console.log("server listing at port number " + process.env.PORT)
         })
