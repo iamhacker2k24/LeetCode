@@ -1,0 +1,120 @@
+{
+  "data": {
+    "question": {
+      "questionId": "1",
+      "title": "Number of Squareful Arrays",
+      "content": "An array is <strong>squareful<strong> if the sum of every pair of adjacent elements is a <strong>perfect square<strong>.Given an integer array nums, return <em>the number of permutations of <em><code>nums<code><em> that are <strong>squareful<strong><em>.Two permutations <code>perm1<code> and <code>perm2<code> are different if there is some index <code>i<code> such that <code>perm1[i] != perm2[i]<code>.&nbsp;<strong class=\"example\">Example 1:<strong><pre><strong>Input:<strong> nums = [1,17,8]<strong>Output:<strong> 2<strong>Explanation:<strong> [1,8,17] and [17,8,1] are the valid permutations.<pre><strong class=\"example\">Example 2:<strong><pre><strong>Input:<strong> nums = [2,2,2]<strong>Output:<strong> 1<pre>&nbsp;<strong>Constraints:<strong><ul>\t<li><code>1 &lt;= nums.length &lt;= 12<code><li>\t<li><code>0 &lt;= nums[i] &lt;= 10<sup>9<sup><code><li><ul>",
+      "likes": 1057,
+      "dislikes": 49,
+      "stats": "{\"totalAccepted\": \"54K\", \"totalSubmission\": \"103.8K\", \"totalAcceptedRaw\": 54036, \"totalSubmissionRaw\": 103814, \"acRate\": \"52.1%\"}",
+      "similarQuestions": "[{\"title\": \"Permutations II\", \"titleSlug\": \"permutations-ii\", \"difficulty\": \"Medium\", \"translatedTitle\": null}]",
+      "categoryTitle": "Algorithms",
+      "hints": [],
+      "topicTags": [
+        {
+          "name": "Array"
+        },
+        {
+          "name": "Hash Table"
+        },
+        {
+          "name": "Math"
+        },
+        {
+          "name": "Dynamic Programming"
+        },
+        {
+          "name": "Backtracking"
+        },
+        {
+          "name": "Bit Manipulation"
+        },
+        {
+          "name": "Bitmask"
+        }
+      ],
+      "companyTags": [
+        {
+          "name": "Gooogle"
+        },
+        {
+          "name": "instagram"
+        }
+      ],
+      "difficulty": "Hard",
+      "isPaidOnly": false,
+      "codeSnippets": [
+        {
+          "lang": "C++",
+          "langSlug": "cpp",
+          "code": "class Solution {public:    int numSquarefulPerms(vector<int>& nums) {            }};",
+          "langsSlug": "cpp"
+        },
+        {
+          "lang": "Java",
+          "langSlug": "java",
+          "code": "class Solution {    public int numSquarefulPerms(int[] nums) {            }}",
+          "langsSlug": "java"
+        },
+        {
+          "lang": "Python3",
+          "langSlug": "python3",
+          "code": "class Solution:    def numSquarefulPerms(self, nums: list[int]) -> int:        ",
+          "langsSlug": "python3"
+        },
+        {
+          "lang": "Python",
+          "langSlug": "python",
+          "code": "class Solution(object):    def numSquarefulPerms(self, nums):        \"\"\"        :type nums: List[int]        :rtype: int        \"\"\"        ",
+          "langsSlug": "python"
+        },
+        {
+          "lang": "JavaScript",
+          "langSlug": "javascript",
+          "code": "  @param {number[]} nums  @return {number} var numSquarefulPerms = function(nums) {    };",
+          "langsSlug": "javascript"
+        },
+        {
+          "lang": "TypeScript",
+          "langSlug": "typescript",
+          "code": "function numSquarefulPerms(nums: number[]): number {    };",
+          "langsSlug": "typescript"
+        },
+        {
+          "lang": "C#",
+          "langSlug": "csharp",
+          "code": "public class Solution {    public int NumSquarefulPerms(int[] nums) {            }}",
+          "langsSlug": "csharp"
+        },
+        {
+          "lang": "C",
+          "langSlug": "c",
+          "code": "int numSquarefulPerms(int nums, int numsSize) {    }",
+          "langsSlug": "c"
+        },
+        {
+          "lang": "Go",
+          "langSlug": "golang",
+          "code": "func numSquarefulPerms(nums []int) int {    }",
+          "langsSlug": "golang"
+        },
+        {
+          "lang": "Rust",
+          "langSlug": "rust",
+          "code": "impl Solution {    pub fn num_squareful_perms(nums: Vec<i32>) -> i32 {            }}",
+          "langsSlug": "rust"
+        },
+        {
+          "lang": "PHP",
+          "langSlug": "php",
+          "code": "class Solution {          @param Integer[] $nums      @return Integer         function numSquarefulPerms($nums) {            }}",
+          "langsSlug": "php"
+        }
+      ],
+      "solution": null,
+      "hasSolution": true,
+      "hasVideoSolution": false,
+      "url": "https:leetcode.com/problemsnumber-of-squareful-arrays"
+    }
+  }
+}
