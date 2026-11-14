@@ -22,13 +22,13 @@ const userSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ["user", "admin"],
+        enum: ["user", "admin","owner"],
         default: "user"
-        
+
     }
 }, {
     timestamps: true
 })
 
-const userModel = moongose.model("userData", userSchema)
-module.exports = userModel;
+const userData = mongoose.model("userData", userSchema)
+module.exports = userData;

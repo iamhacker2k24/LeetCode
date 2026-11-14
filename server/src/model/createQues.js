@@ -1,144 +1,75 @@
-
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-// Stats schema
-const statsSchema = new Schema(
-    {
-        totalAccepted: { type: String, default: "0" },
-        totalSubmission: { type: String, default: "0" },
-        totalAcceptedRaw: { type: Number, default: 0 },
-        totalSubmissionRaw: { type: Number, default: 0 },
-        acRate: { type: String, default: "0%" }
-    },
-    { _id: false }
-);
-
-// Similar questions schema
-const similarQuestionSchema = new Schema(
-    {
-        title: { type: String, required: true },
-        titleSlug: { type: String, required: true },
-        difficulty: { type: String },
-        translatedTitle: { type: String, default: null }
-    },
-    { _id: false }
-);
-
-// Tags schema
-const tagSchema = new Schema(
-    {
-        name: { type: String, required: true }
-    },
-    { _id: false }
-);
-
-// Code snippets schema
-const codeSnippetSchema = new Schema(
-    {
-        lang: { type: String, required: true },
-        langSlug: { type: String, required: true },
-        code: { type: String, required: true },
-        langsSlug: { type: String }
-    },
-    { _id: false }
-);
-
-// Main problem schema
-const problemSchema = new Schema(
+const questionSchema = new Schema(
     {
         questionId: {
             type: String,
             required: true,
             unique: true,
-            index: true
+            trim: true
         },
-
         title: {
             type: String,
             required: true,
             trim: true
-        },
-
-        content: {
+        }, slug: {
             type: String,
-            default: ""
+            required: true,
+            trim: true
         },
-
-        likes: {
-            type: Number,
-            default: 0
-        },
-
-        dislikes: {
-            type: Number,
-            default: 0
-        },
-
-        stats: {
-            type: statsSchema,
-            default: () => ({})
-        },
-
-        similarQuestions: {
-            type: [similarQuestionSchema],
-            default: []
-        },
-
-        categoryTitle: {
+        description: {
             type: String,
-            default: "Algorithms"
+            required: true
         },
-
-        hints: {
-            type: [String],
-            default: []
-        },
-
-        topicTags: {
-            type: [tagSchema],
-            default: []
-        },
-
-        companyTags: {
-            type: [tagSchema],
-            default: []
-        },
-
         difficulty: {
             type: String,
             enum: ["Easy", "Medium", "Hard"],
             required: true
         },
-
-        isPaidOnly: {
-            type: Boolean,
-            default: false
-        },
-
-        codeSnippets: {
-            type: [codeSnippetSchema],
-            default: []
-        },
-
-        solution: {
-            type: Schema.Types.Mixed,
-            default: null
-        },
-
-        hasSolution: {
-            type: Boolean,
-            default: false
-        },
-
-        hasVideoSolution: {
-            type: Boolean,
-            default: false
-        },
-
-        url: {
+        topics: [{
             type: String,
             trim: true
+        }],
+        likes: {
+            type: Number,
+            default: 0
+        },
+        dislikes: {
+            type: Number,
+            default: 0
+        },
+        stats: {
+            totalAccepted: {
+                type: Number,
+                default: 0
+            },
+            totalSubmissions: {
+                type: Number,
+                default: 0
+            },
+            acceptanceRate: {
+                type: Number,
+                default: 0
+            }
+        },
+        constraints: [{
+            type: String
+        }],
+        examples: [{
+            input: String,
+            output: String,
+            explanation: String
+        }],
+        companies: [{
+            type: String
+        }],
+        hints: [{
+            type: String
+        }],
+        isPremium: {
+            type: Boolean,
+            default: false
         }
     },
     {
@@ -146,6 +77,7 @@ const problemSchema = new Schema(
     }
 );
 
-const Problem = mongoose.model("Problem", problemSchema);
+const Question = mongoose.model("Question", questionSchema);
 
-module.exports = Problem;
+
+module.exports = Question;
