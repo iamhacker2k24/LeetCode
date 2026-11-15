@@ -1,5 +1,7 @@
+const codeTemplateSchema = require("../model/CodeTemplateschema");
 const Question = require("../model/createQues");
 const counter = require("../model/quesIdcounter");
+const testCase = require("../model/testCase");
 
 const createQues = async (req, res) => {
     try {
@@ -199,8 +201,6 @@ const getOnequesBySlug = async (req, res) => {
 }
 
 
-
-
 const CreateTestCse = (req, res) => {
     try {
 
@@ -239,9 +239,20 @@ const deleteTestCase = (req, res) => {
 
     }
 }
-const getTestCaseByid = (req, res) => {
+const getTestCaseByid = async (req, res) => {
     try {
-
+        const { id } = req.params
+        const data = await testCase.find({ questionId: Number(id), isSample: true }).select("-_id -testCaseId -order ")
+        if (!data) {
+            return res.status(400).json({
+                success: false,
+                message: "question id wrong"
+            });
+        }
+        return res.status(201).json({
+            success: true,
+            data
+        });
     } catch (error) {
         console.error("getAll ques error ", error);
         return res.status(500).json({
@@ -254,6 +265,8 @@ const getTestCaseByid = (req, res) => {
 
 const createCodeTemplate = (req, res) => {
     try {
+        const { id } = req.parms;
+
 
     } catch (error) {
         console.error("getAll ques error ", error);
@@ -294,9 +307,21 @@ const deleteCodeTemplate = (req, res) => {
     }
 }
 
-const getCodeTemplateByid = (req, res) => {
+const getCodeTemplateByid = async (req, res) => {
     try {
-
+        const { id } = req.params;
+        console.log(id)
+        const data = await codeTemplateSchema.findOne({ questionId: Number(id) });
+        if (!data) {
+            return res.status(400).json({
+                success: false,
+                message: "question id wrong"
+            });
+        }
+        return res.status(201).json({
+            success: true,
+            data
+        });
     } catch (error) {
         console.error("getAll ques error ", error);
         return res.status(500).json({
@@ -306,8 +331,12 @@ const getCodeTemplateByid = (req, res) => {
 
     }
 }
+
+
+
+
 module.exports = {
     createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug,
-    CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate, 
+    CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate,
     editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid
 }

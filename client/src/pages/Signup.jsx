@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { registerUser } from "../services/api";
+import { FiAlertTriangle, FiArrowLeft } from "react-icons/fi";
 
 // Schema validation for sign up
 const signupSchema = z
@@ -101,7 +102,7 @@ const Signup = () => {
 
         {serverError && (
           <div className="mb-5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-            <span>⚠️</span>
+            <FiAlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{serverError}</span>
           </div>
         )}
@@ -241,9 +242,10 @@ const Signup = () => {
           <div className="mt-4">
             <Link
               to="/"
-              className="text-xs text-slate-500 hover:text-slate-300 transition"
+              className="text-xs text-slate-500 hover:text-slate-300 transition inline-flex items-center gap-1.5"
             >
-              &larr; Back to Home
+              <FiArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Home</span>
             </Link>
           </div>
         </div>

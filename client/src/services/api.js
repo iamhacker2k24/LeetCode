@@ -12,6 +12,8 @@ export const API_ENDPOINTS = {
   REGISTRATION: `${BACKEND_URL}/api/user/registration`,
   GET_ALL_QUESTIONS: `${BACKEND_URL}/api/admin/qs/getallques`,
   GET_ONE_QUESTION: (id) => `${BACKEND_URL}/api/admin/qs/getOneques/${id}`,
+  GET_CODE_TEMPLATE: (id) => `${BACKEND_URL}/api/admin/qs/getcodetemplatebyid/${id}`,
+  GET_TEST_CASES: (id) => `${BACKEND_URL}/api/admin/qs/gettestcasebyid/${id}`,
 };
 
 export async function loginUser(email, password) {
@@ -99,6 +101,52 @@ export async function getOneQuestion(id) {
       (typeof data?.msg === "string" ? data.msg : null) ||
       data?.message ||
       `Failed to fetch question #${id}.`;
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
+export async function getCodeTemplateById(id) {
+  const url = API_ENDPOINTS.GET_CODE_TEMPLATE(id);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok || !data?.success) {
+    const errorMsg =
+      (typeof data?.msg === "string" ? data.msg : null) ||
+      data?.message ||
+      `Failed to fetch code template for question #${id}.`;
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
+export async function getTestCasesById(id) {
+  const url = API_ENDPOINTS.GET_TEST_CASES(id);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok || !data?.success) {
+    const errorMsg =
+      (typeof data?.msg === "string" ? data.msg : null) ||
+      data?.message ||
+      `Failed to fetch test cases for question #${id}.`;
     throw new Error(errorMsg);
   }
 

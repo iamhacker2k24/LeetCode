@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { loginUser } from "../services/api";
+import { FiAlertTriangle, FiMail, FiArrowLeft } from "react-icons/fi";
 
 // Schema validation for login
 const loginSchema = z.object({
@@ -85,7 +86,7 @@ const Login = () => {
 
         {serverError && (
           <div className="mb-5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-            <span>⚠️</span>
+            <FiAlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{serverError}</span>
           </div>
         )}
@@ -108,9 +109,7 @@ const Login = () => {
                     : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
                 }`}
               />
-              <span className="absolute right-3.5 top-3.5 text-slate-500 text-sm pointer-events-none">
-                ✉
-              </span>
+              <FiMail className="absolute right-3.5 top-3.5 text-slate-500 w-4 h-4 pointer-events-none" />
             </div>
             {errors.email && (
               <p className="text-rose-400 text-xs mt-1.5 font-medium flex items-center gap-1">
@@ -188,9 +187,10 @@ const Login = () => {
           <div className="mt-4">
             <Link
               to="/"
-              className="text-xs text-slate-500 hover:text-slate-300 transition"
+              className="text-xs text-slate-500 hover:text-slate-300 transition inline-flex items-center gap-1.5"
             >
-              &larr; Back to Home
+              <FiArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Home</span>
             </Link>
           </div>
         </div>

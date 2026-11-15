@@ -4,22 +4,29 @@ const CodeTemplateSchema = new mongoose.Schema({
     questionId: {
         type: Number,
         required: true,
-        ref: "Question"
+        unique: true
     },
-    language: {
+    python: {
         type: String,
         required: true
     },
-    initialCode: {
+    C: {
         type: String,
         required: true
     },
-    driverCode: String,
-    functionName: String
+    java: {
+        type: String,
+        required: true
+    },
+    cpp: {
+        type: String,
+        required: true
+    }
+
 });
 
 
 
 const codeTemplateSchema = mongoose.model("codeTemplateSchema", CodeTemplateSchema)
 
-module.exports = { codeTemplateSchema }
+module.exports = codeTemplateSchema 

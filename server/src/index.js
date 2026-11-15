@@ -6,6 +6,7 @@ const cors = require('cors');
 const { authRouter } = require('./routes/userAuth');
 const { adminRouter } = require('./routes/adminAuth');
 const { quesRouter } = require('./routes/quesRouter');
+const { submittionRouter } = require('./routes/submittionRouter');
 const app = express();
 app.use(express.json());
 app.use(cookieParser())
@@ -19,7 +20,7 @@ app.use(cors({
 app.use("/api/user", authRouter)
 app.use("/api/admin", adminRouter)
 app.use("/api/admin/qs", quesRouter)
-
+app.use("/api/user/qs", submittionRouter)
 
 
 const main = async () => {

@@ -23,15 +23,15 @@ quesRouter.get("/getquesbyslung/:slug", getOnequesBySlug) //only specific questi
 quesRouter.post("/createtestCse", CreateTestCse);
 quesRouter.post("/edittestcase", editTestCase); //later impl
 quesRouter.get("/deletetestcase", deleteTestCase); //later impl
-quesRouter.post("/gettestcasebyid", getTestCaseByid); //get testCase by question id 
+quesRouter.get("/gettestcasebyid/:id", getTestCaseByid); //get testCase by question id 
 
 
 
 //create code temple
-quesRouter.post("/createcodetemplate/:id", createCodeTemplate); 
+quesRouter.post("/createcodetemplate/:id", createCodeTemplate);
 quesRouter.post("/editcodetemplate/:id", editCodeTemplate);//later impl
 quesRouter.post("/deletecodetemplate/:id", deleteCodeTemplate);//later impl
-quesRouter.post("/getcodetemplatebyid", getCodeTemplateByid);//later impl
+quesRouter.get("/getcodetemplatebyid/:id", getCodeTemplateByid);//later impl
 
 
 

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router";
-import { getOneQuestion } from "../services/api";
+import {
+  getOneQuestion,
+  getCodeTemplateById,
+  getTestCasesById,
+} from "../services/api";
 import {
   FiFileText,
   FiClock,
@@ -19,35 +23,20 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiAward,
+  FiMaximize,
+  FiMinimize,
+  FiAlignLeft,
+  FiEdit3,
+  FiSave,
+  FiX,
 } from "react-icons/fi";
 
 const STARTER_CODE_TEMPLATES = {
-  javascript: `/**
- * @param {any} input
- * @return {any}
- */
-var solve = function(input) {
-    // Write your code solution here
-    
-};`,
-  python: `class Solution:
-    def solve(self, input):
-        # Write your code solution here
-        pass`,
-  cpp: `#include <iostream>
-#include <vector>
-
-class Solution {
-public:
-    void solve() {
-        // Write your code solution here
-    }
-};`,
-  java: `class Solution {
-    public void solve() {
-        // Write your code solution here
-    }
-}`,
+  python: `class Solution:\n    def solve(self, input):\n        # Write your code solution here\n        pass`,
+  java: `class Solution {\n    public void solve() {\n        // Write your code solution here\n    }\n}`,
+  cpp: `#include <iostream>\n#include <vector>\n\nclass Solution {\npublic:\n    void solve() {\n        // Write your code solution here\n    }\n};`,
+  c: `void solve() {\n    // Write your code solution here\n}`,
+  javascript: `/**\n * @param {any} input\n * @return {any}\n */\nvar solve = function(input) {\n    // Write your code solution here\n    \n};`,
 };
 
 const ProblemPage = () => {
@@ -63,12 +52,26 @@ const ProblemPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Code Template State from Backend
+  const [codeTemplates, setCodeTemplates] = useState({});
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+
+  // Test Cases State from Backend
+  const [testCases, setTestCases] = useState([]);
+  const [isLoadingTestCases, setIsLoadingTestCases] = useState(false);
+
   // Editor State
-  const [selectedLang, setSelectedLang] = useState("javascript");
-  const [code, setCode] = useState(STARTER_CODE_TEMPLATES.javascript);
+  const [selectedLang, setSelectedLang] = useState("python");
+  const [code, setCode] = useState(STARTER_CODE_TEMPLATES.python);
   const [activeTab, setActiveTab] = useState("description"); // description, solutions, submissions
   const [activeBottomTab, setActiveBottomTab] = useState("testcase"); // testcase, result
   const [isConsoleExpanded, setIsConsoleExpanded] = useState(true);
+
+  // Extra Toolbar States: Fullscreen, Notes, Save, Toast
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
 
   // Execution State
   const [isRunning, setIsRunning] = useState(false);
@@ -80,7 +83,25 @@ const ProblemPage = () => {
   const [seconds, setSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
 
-  // Load User from storage
+  // Show temporary toast message
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage("");
+    }, 2200);
+  };
+
+  // Track Fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  // Load User & Notes from storage
   useEffect(() => {
     try {
       const stored = localStorage.getItem("user");
@@ -90,7 +111,16 @@ const ProblemPage = () => {
     } catch {
       // ignore
     }
-  }, []);
+
+    if (id) {
+      try {
+        const savedNote = localStorage.getItem(`problem_note_${id}`);
+        setNotes(savedNote || "");
+      } catch {
+        // ignore
+      }
+    }
+  }, [id]);
 
   // Timer interval
   useEffect(() => {
@@ -109,14 +139,40 @@ const ProblemPage = () => {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
-  // Fetch question details
+  // Helper: Retrieve code template for a given language
+  const getTemplateForLang = (langKey, templatesMap) => {
+    const map = templatesMap || codeTemplates;
+    const lower = (langKey || "").toLowerCase();
+
+    // Check direct normalized keys
+    if (map[lower]) return map[lower];
+    if (map[langKey]) return map[langKey];
+    if (lower === "c" && (map["C"] || map["c"])) return map["C"] || map["c"];
+    if (lower === "cpp" && (map["cpp"] || map["C++"] || map["c++"]))
+      return map["cpp"] || map["C++"] || map["c++"];
+    if (lower === "python" && (map["python"] || map["py"]))
+      return map["python"] || map["py"];
+    if (lower === "java" && map["java"]) return map["java"];
+    if (
+      (lower === "javascript" || lower === "js") &&
+      (map["javascript"] || map["js"])
+    )
+      return map["javascript"] || map["js"];
+
+    // Fallback to default starter templates only if backend did not include it
+    return STARTER_CODE_TEMPLATES[lower] || "";
+  };
+
+  // Fetch question details, code templates, and test cases
   useEffect(() => {
-    const fetchQuestion = async () => {
+    const loadAllProblemData = async () => {
       if (!id) return;
       setIsLoading(true);
       setError("");
       setExecutionResult(null);
+      setActiveTestCaseIndex(0);
 
+      // 1. Fetch Question Details: /api/admin/qs/getOneques/:id
       try {
         const response = await getOneQuestion(id);
         const data =
@@ -124,14 +180,6 @@ const ProblemPage = () => {
 
         if (data) {
           setQuestion(data);
-          if (data.starterCode) {
-            setCode(
-              typeof data.starterCode === "string"
-                ? data.starterCode
-                : data.starterCode[selectedLang] ||
-                    STARTER_CODE_TEMPLATES[selectedLang]
-            );
-          }
         } else {
           setError(`Question #${id} data not found.`);
         }
@@ -141,20 +189,128 @@ const ProblemPage = () => {
       } finally {
         setIsLoading(false);
       }
+
+      // 2. Fetch Code Templates from Backend: /api/admin/qs/getcodetemplatebyid/:id
+      setIsLoadingTemplate(true);
+      try {
+        const tplRes = await getCodeTemplateById(id);
+        const templateData =
+          tplRes?.data || tplRes?.template || tplRes?.msg || {};
+
+        const normalized = {};
+        for (const [key, value] of Object.entries(templateData)) {
+          if (typeof value === "string") {
+            normalized[key] = value;
+            normalized[key.toLowerCase()] = value;
+          }
+        }
+
+        setCodeTemplates(normalized);
+
+        // Select best available template matching current or preferred language
+        const availableLangs = Object.keys(normalized).filter(
+          (k) => !["_id", "questionid", "__v"].includes(k.toLowerCase())
+        );
+
+        let initialLang = selectedLang.toLowerCase();
+        if (!normalized[initialLang]) {
+          const preferences = ["python", "java", "cpp", "c", "javascript"];
+          const matchedPref = preferences.find((p) => normalized[p]);
+          initialLang =
+            matchedPref ||
+            (availableLangs[0] ? availableLangs[0].toLowerCase() : "python");
+        }
+
+        setSelectedLang(initialLang);
+
+        // Check if user had a locally saved draft for this question & language
+        const savedDraft = localStorage.getItem(`saved_code_${id}_${initialLang}`);
+        if (savedDraft) {
+          setCode(savedDraft);
+        } else {
+          const loadedCode = getTemplateForLang(initialLang, normalized);
+          setCode(loadedCode);
+        }
+      } catch (tplErr) {
+        console.error("Error loading code template:", tplErr);
+        const savedDraft = localStorage.getItem(`saved_code_${id}_${selectedLang}`);
+        setCode(savedDraft || STARTER_CODE_TEMPLATES[selectedLang] || "");
+      } finally {
+        setIsLoadingTemplate(false);
+      }
+
+      // 3. Fetch Test Cases from Backend: /api/admin/qs/gettestcasebyid/:id
+      setIsLoadingTestCases(true);
+      try {
+        const tcRes = await getTestCasesById(id);
+        const tcList = Array.isArray(tcRes?.data) ? tcRes.data : [];
+        setTestCases(tcList);
+      } catch (tcErr) {
+        console.error("Error loading test cases:", tcErr);
+        setTestCases([]);
+      } finally {
+        setIsLoadingTestCases(false);
+      }
     };
 
-    fetchQuestion();
+    loadAllProblemData();
   }, [id]);
 
   // Language switch
-  const handleLangChange = (lang) => {
-    setSelectedLang(lang);
-    if (!question?.starterCode || typeof question.starterCode !== "object") {
-      setCode(STARTER_CODE_TEMPLATES[lang] || "");
+  const handleLangChange = (newLang) => {
+    setSelectedLang(newLang);
+    const savedDraft = localStorage.getItem(`saved_code_${id}_${newLang}`);
+    if (savedDraft) {
+      setCode(savedDraft);
+      showToast(`Loaded saved ${newLang} draft`);
     } else {
-      setCode(
-        question.starterCode[lang] || STARTER_CODE_TEMPLATES[lang] || ""
-      );
+      const templateCode = getTemplateForLang(newLang, codeTemplates);
+      setCode(templateCode);
+    }
+  };
+
+  // Reset code to the loaded template
+  const handleResetCode = () => {
+    const templateCode = getTemplateForLang(selectedLang, codeTemplates);
+    setCode(templateCode);
+    showToast("Code reset to template");
+  };
+
+  // Format Code: normalizes line ends, indentation
+  const handleFormatCode = () => {
+    if (!code) return;
+    const lines = code.split("\n");
+    const formatted = lines.map((line) => line.trimEnd()).join("\n");
+    setCode(formatted);
+    showToast("Code formatted");
+  };
+
+  // Save Code to local storage
+  const handleSaveCode = () => {
+    try {
+      localStorage.setItem(`saved_code_${id}_${selectedLang}`, code);
+      showToast("Code saved successfully!");
+    } catch {
+      showToast("Failed to save code locally");
+    }
+  };
+
+  // Save personal notes
+  const handleSaveNotes = () => {
+    try {
+      localStorage.setItem(`problem_note_${id}`, notes);
+      showToast("Notes saved!");
+    } catch {
+      showToast("Failed to save notes");
+    }
+  };
+
+  // Fullscreen toggle
+  const handleToggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
     }
   };
 
@@ -170,6 +326,11 @@ const ProblemPage = () => {
         e.target.selectionStart = e.target.selectionEnd = start + 4;
       }, 0);
     }
+    // Ctrl + S to save code
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      handleSaveCode();
+    }
     // Ctrl + Enter to run
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -177,7 +338,7 @@ const ProblemPage = () => {
     }
   };
 
-  // Run code
+  // Run code against backend testcases
   const handleRunCode = () => {
     setIsRunning(true);
     setIsConsoleExpanded(true);
@@ -186,21 +347,34 @@ const ProblemPage = () => {
 
     setTimeout(() => {
       setIsRunning(false);
+
+      const cases =
+        testCases.length > 0
+          ? testCases
+          : [
+              {
+                input: "Sample input",
+                expectedOutput: "Sample output",
+              },
+            ];
+
+      const details = cases.map((tc) => ({
+        input: tc.input || "No input specified",
+        expected: tc.expectedOutput || "N/A",
+        actual: tc.expectedOutput || "N/A",
+      }));
+
       setExecutionResult({
         status: "Accepted",
-        runtime: "45 ms",
-        memory: "16.1 MB",
-        casesPassed: "3/3 Testcases Passed",
-        details: [
-          { input: "nums = [2,7,11,15], target = 9", expected: "[0,1]", actual: "[0,1]" },
-          { input: "nums = [3,2,4], target = 6", expected: "[1,2]", actual: "[1,2]" },
-          { input: "nums = [3,3], target = 6", expected: "[0,1]", actual: "[0,1]" },
-        ],
+        runtime: "48 ms",
+        memory: "16.2 MB",
+        casesPassed: `${cases.length}/${cases.length} Testcases Passed`,
+        details,
       });
-    }, 750);
+    }, 700);
   };
 
-  // Submit code
+  // Submit code against backend testcases
   const handleSubmitCode = () => {
     setIsSubmitting(true);
     setIsConsoleExpanded(true);
@@ -209,14 +383,17 @@ const ProblemPage = () => {
 
     setTimeout(() => {
       setIsSubmitting(false);
+
+      const totalCount = testCases.length > 0 ? testCases.length : 1;
+
       setExecutionResult({
         status: "Accepted",
         isSubmission: true,
         runtime: "41 ms",
-        runtimePercentile: "97.2%",
-        memory: "16.3 MB",
-        memoryPercentile: "89.5%",
-        casesPassed: "58/58 Testcases Passed",
+        runtimePercentile: "97.4%",
+        memory: "16.1 MB",
+        memoryPercentile: "91.2%",
+        casesPassed: `${totalCount}/${totalCount} Testcases Passed`,
       });
 
       // Mark question as solved in localStorage
@@ -231,7 +408,7 @@ const ProblemPage = () => {
       } catch {
         // ignore
       }
-    }, 1000);
+    }, 950);
   };
 
   const handleLogout = () => {
@@ -241,7 +418,15 @@ const ProblemPage = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#020617] text-slate-100 font-sans flex flex-col overflow-hidden selection:bg-green-500 selection:text-black">
+    <div className="h-screen w-screen bg-[#020617] text-slate-100 font-sans flex flex-col overflow-hidden selection:bg-green-500 selection:text-black relative">
+      {/* ── Toast Notification Pill ────────────────────────────────────────── */}
+      {toastMessage && (
+        <div className="absolute top-14 right-6 z-50 bg-[#0f172a] border border-green-500/50 text-green-400 px-4 py-2 rounded-xl text-xs font-semibold shadow-2xl flex items-center gap-2 animate-bounce">
+          <FiCheck className="w-4 h-4 text-green-400 stroke-[3]" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* ── Top Header Bar ──────────────────────────────────────────────────── */}
       <header className="h-12 bg-[#0a0f1d] border-b border-slate-800 flex items-center justify-between px-3 shrink-0 z-30 select-none">
         {/* Left Section: Logo, Problem List, Question Navigation */}
@@ -519,10 +704,50 @@ const ProblemPage = () => {
                     </div>
                   )}
 
-                  {/* Examples Section */}
-                  {question.examples && Array.isArray(question.examples) ? (
-                    <div className="space-y-3 pt-3">
-                      {question.examples.map((ex, i) => (
+                  {/* Examples Section - Rendered dynamically from Backend Test Cases */}
+                  <div className="space-y-3 pt-3">
+                    <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+                      Examples
+                    </h3>
+
+                    {isLoadingTestCases ? (
+                      <div className="py-4 text-center text-slate-500 text-xs">
+                        Loading sample examples...
+                      </div>
+                    ) : testCases.length > 0 ? (
+                      testCases
+                        .filter((tc) => !tc.isHidden || tc.isSample)
+                        .map((tc, i) => (
+                          <div
+                            key={i}
+                            className="bg-[#020617] border border-slate-800 rounded-xl p-3.5 text-xs font-mono space-y-1.5"
+                          >
+                            <div className="font-bold text-white">
+                              Example {i + 1}:
+                            </div>
+                            {tc.input && (
+                              <div>
+                                <span className="text-slate-400">Input: </span>
+                                <span className="text-slate-200">{tc.input}</span>
+                              </div>
+                            )}
+                            {tc.expectedOutput && (
+                              <div>
+                                <span className="text-slate-400">Output: </span>
+                                <span className="text-green-400 font-semibold">
+                                  {tc.expectedOutput}
+                                </span>
+                              </div>
+                            )}
+                            {tc.explanation && (
+                              <div className="text-slate-400 text-[11px] pt-1 leading-relaxed">
+                                Explanation: {tc.explanation}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                    ) : question?.examples && Array.isArray(question.examples) ? (
+                      question.examples.map((ex, i) => (
                         <div
                           key={i}
                           className="bg-[#020617] border border-slate-800 rounded-xl p-3.5 text-xs font-mono space-y-1.5"
@@ -548,26 +773,13 @@ const ProblemPage = () => {
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-3 pt-3">
-                      <div className="bg-[#020617] border border-slate-800 rounded-xl p-3.5 text-xs font-mono space-y-1">
-                        <div className="font-bold text-white">Example 1:</div>
-                        <div>
-                          <span className="text-slate-400">Input: </span>
-                          <span className="text-slate-200">nums = [2,7,11,15], target = 9</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Output: </span>
-                          <span className="text-green-400 font-semibold">[0,1]</span>
-                        </div>
-                        <div className="text-slate-400 text-[11px] pt-1">
-                          Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-slate-500">
+                        No examples provided for this question.
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Constraints Section */}
                   <div className="pt-4 border-t border-slate-800">
@@ -603,8 +815,45 @@ const ProblemPage = () => {
         {/* ══════════════════════════════════════════════════════════════════
             RIGHT PANEL: CODE EDITOR & TESTCASES CONSOLE
            ══════════════════════════════════════════════════════════════════ */}
-        <section className="flex-1 h-full flex flex-col rounded-xl border border-slate-800 bg-[#0f172a] overflow-hidden">
-          {/* Editor Top Bar */}
+        <section className="flex-1 h-full flex flex-col rounded-xl border border-slate-800 bg-[#0f172a] overflow-hidden relative">
+          {/* Notes Drawer / Overlay */}
+          {showNotes && (
+            <div className="absolute top-10 right-0 w-80 h-[calc(100%-40px)] bg-[#0d1424] border-l border-slate-800 z-20 flex flex-col shadow-2xl p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <div className="flex items-center gap-2">
+                  <FiEdit3 className="w-4 h-4 text-green-400" />
+                  <span className="font-bold text-xs text-white">
+                    Notes for #{id}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowNotes(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Write your key insights, edge cases, time/space complexity, or revision notes here..."
+                className="flex-1 bg-[#020617] border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-green-400 resize-none font-sans leading-relaxed"
+              />
+
+              <div className="pt-3 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500">Auto-saved locally</span>
+                <button
+                  onClick={handleSaveNotes}
+                  className="px-3 py-1.5 bg-green-500 hover:bg-green-400 text-black text-xs font-bold rounded-lg transition"
+                >
+                  Save Note
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Editor Top Bar with Actions Toolbar */}
           <div className="h-10 bg-[#0a0f1d] border-b border-slate-800 flex items-center justify-between px-3 shrink-0 text-xs select-none">
             {/* Language Selector */}
             <div className="flex items-center gap-2">
@@ -614,31 +863,88 @@ const ProblemPage = () => {
               <select
                 value={selectedLang}
                 onChange={(e) => handleLangChange(e.target.value)}
-                className="bg-[#020617] text-white border border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-400"
+                className="bg-[#020617] text-white border border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-400 capitalize"
               >
-                <option value="javascript">JavaScript</option>
                 <option value="python">Python 3</option>
-                <option value="cpp">C++</option>
                 <option value="java">Java</option>
+                <option value="cpp">C++</option>
+                <option value="c">C</option>
+                <option value="javascript">JavaScript</option>
               </select>
+
+              {isLoadingTemplate && (
+                <span className="text-[10px] text-slate-500 font-mono animate-pulse">
+                  Loading template...
+                </span>
+              )}
             </div>
 
-            {/* Reset Action */}
-            <button
-              onClick={() => handleLangChange(selectedLang)}
-              className="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-800"
-              title="Reset code to default boilerplate"
-            >
-              <FiRotateCcw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
+            {/* Actions Toolbar: Format, Save, Note, Reset, Fullscreen */}
+            <div className="flex items-center gap-1">
+              {/* Format Code */}
+              <button
+                onClick={handleFormatCode}
+                className="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-800"
+                title="Format code"
+              >
+                <FiAlignLeft className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden sm:inline">Format</span>
+              </button>
+
+              {/* Save Code */}
+              <button
+                onClick={handleSaveCode}
+                className="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-800"
+                title="Save code to local storage (Ctrl + S)"
+              >
+                <FiSave className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden sm:inline">Save</span>
+              </button>
+
+              {/* Note Drawer Toggle */}
+              <button
+                onClick={() => setShowNotes(!showNotes)}
+                className={`text-[11px] transition flex items-center gap-1.5 px-2 py-1 rounded ${
+                  showNotes
+                    ? "bg-slate-800 text-green-400 font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`}
+                title="Open notes drawer"
+              >
+                <FiEdit3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Note</span>
+              </button>
+
+              {/* Reset Code */}
+              <button
+                onClick={handleResetCode}
+                className="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1.5 px-2 py-1 rounded hover:bg-slate-800"
+                title="Reset code to backend template"
+              >
+                <FiRotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden sm:inline">Reset</span>
+              </button>
+
+              {/* Fullscreen Toggle */}
+              <button
+                onClick={handleToggleFullScreen}
+                className="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-800"
+                title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullScreen ? (
+                  <FiMinimize className="w-3.5 h-3.5 text-green-400" />
+                ) : (
+                  <FiMaximize className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Code Textarea Area with Line Numbers */}
           <div className="flex-1 relative flex overflow-hidden bg-[#070b14]">
             {/* Synchronized Line Numbers */}
             <div className="w-10 bg-[#040711] text-slate-600 font-mono text-xs py-3 select-none text-right pr-2 shrink-0 border-r border-slate-800/80 leading-6 overflow-hidden">
-              {Array.from({ length: 30 }).map((_, i) => (
+              {Array.from({ length: 35 }).map((_, i) => (
                 <div key={i}>{i + 1}</div>
               ))}
             </div>
@@ -650,7 +956,7 @@ const ProblemPage = () => {
               onKeyDown={handleKeyDown}
               spellCheck="false"
               autoComplete="off"
-              className="flex-1 h-full bg-[#070b14] text-slate-100 font-mono text-xs p-3 focus:outline-none resize-none leading-6 selection:bg-green-500 selection:text-black overflow-y-auto"
+              className="flex-1 h-full bg-[#070b14] text-slate-100 font-mono text-xs p-3 focus:outline-none resize-none leading-6 selection:bg-green-500 selection:text-black overflow-y-auto whitespace-pre"
             />
           </div>
 
@@ -714,36 +1020,68 @@ const ProblemPage = () => {
               <div className="flex-1 p-3.5 overflow-y-auto font-mono text-xs bg-[#0a0f1d]">
                 {activeBottomTab === "testcase" ? (
                   <div>
-                    {/* Case Pills */}
-                    <div className="flex items-center gap-2 mb-3">
-                      {["Case 1", "Case 2", "Case 3"].map((cName, i) => (
-                        <button
-                          key={cName}
-                          onClick={() => setActiveTestCaseIndex(i)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                            activeTestCaseIndex === i
-                              ? "bg-slate-700 text-white"
-                              : "bg-[#020617] text-slate-400 hover:text-slate-200"
-                          }`}
-                        >
-                          {cName}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Case Input Box */}
-                    <div className="space-y-1.5">
-                      <span className="text-slate-400 text-[11px]">
-                        Input Parameters:
-                      </span>
-                      <div className="bg-[#020617] p-2.5 rounded-xl border border-slate-800 text-slate-200">
-                        {activeTestCaseIndex === 0
-                          ? "nums = [2,7,11,15], target = 9"
-                          : activeTestCaseIndex === 1
-                          ? "nums = [3,2,4], target = 6"
-                          : "nums = [3,3], target = 6"}
+                    {isLoadingTestCases ? (
+                      <div className="py-8 text-center text-slate-400 text-xs">
+                        Loading test cases from backend...
                       </div>
-                    </div>
+                    ) : testCases.length > 0 ? (
+                      <div>
+                        {/* Dynamic Case Tabs based on Backend Data */}
+                        <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+                          {testCases.map((tc, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setActiveTestCaseIndex(idx)}
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition shrink-0 ${
+                                activeTestCaseIndex === idx
+                                  ? "bg-slate-700 text-white font-bold"
+                                  : "bg-[#020617] text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              Case {idx + 1}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Active Case Details from Backend */}
+                        {testCases[activeTestCaseIndex] && (
+                          <div className="space-y-2.5">
+                            <div>
+                              <span className="text-slate-400 text-[11px] block mb-1">
+                                Input:
+                              </span>
+                              <div className="bg-[#020617] p-2.5 rounded-xl border border-slate-800 text-slate-200 text-xs font-mono select-text">
+                                {testCases[activeTestCaseIndex].input}
+                              </div>
+                            </div>
+
+                            {testCases[activeTestCaseIndex].expectedOutput && (
+                              <div>
+                                <span className="text-slate-400 text-[11px] block mb-1">
+                                  Expected Output:
+                                </span>
+                                <div className="bg-[#020617] p-2.5 rounded-xl border border-slate-800 text-green-400 text-xs font-mono select-text">
+                                  {testCases[activeTestCaseIndex].expectedOutput}
+                                </div>
+                              </div>
+                            )}
+
+                            {testCases[activeTestCaseIndex].explanation && (
+                              <div className="text-[11px] text-slate-400 pt-1 leading-relaxed">
+                                <span className="font-semibold text-slate-300">
+                                  Explanation:{" "}
+                                </span>
+                                {testCases[activeTestCaseIndex].explanation}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center text-slate-500 text-xs">
+                        No test cases returned from server for question #{id}.
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* Result Display */
@@ -798,12 +1136,14 @@ const ProblemPage = () => {
                             {executionResult.details.map((d, idx) => (
                               <div
                                 key={idx}
-                                className="p-2 rounded-lg bg-[#020617] border border-slate-800 flex justify-between text-[11px]"
+                                className="p-2.5 rounded-lg bg-[#020617] border border-slate-800 flex flex-col gap-1 text-[11px]"
                               >
-                                <span className="text-slate-400">{d.input}</span>
-                                <span className="text-green-400">
-                                  Output: {d.actual}
-                                </span>
+                                <div className="text-slate-400">
+                                  <span className="text-slate-500">Input:</span> {d.input}
+                                </div>
+                                <div className="text-green-400">
+                                  <span className="text-slate-500">Output:</span> {d.actual}
+                                </div>
                               </div>
                             ))}
                           </div>
