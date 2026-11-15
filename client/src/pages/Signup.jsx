@@ -1,114 +1,247 @@
-// import React, { useState } from "react";
-
-// const Signup = () => {
-//   const [name, setName] = useState("");
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//   };
-//   return (
-//     <>
-//       <form onSubmit={handleSubmit} className="min-h-screen flex flex-col justify-center items-center gap-y-3 " >
-//         <input
-//           type="text"
-//           value={name}
-//           placeholder="Enter your name"
-//           onChange={(e) => setName(e.target.value)}
-//         />
-//         <input
-//           type="email"
-//           value={email}
-//           placeholder="Enter your email"
-//           onChange={(e) => setEmail(e.target.value)}
-//         />
-//         <input
-//           type="password"
-//           value={password}
-//           placeholder="Enter your password"
-//           onChange={(e) => setPassword(e.target.value)}
-//         />
-//         <button type="submit">Submit</button>
-//       </form>
-//     </>
-//   );
-// };
-
-// export default Signup;
-
-import React from "react";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-//Schema validation for sign up from
-const signupSchema = z.object({
-  firstName: z.string().min(3, "name should least 3 char "),
-  emailId: z.string().min(3, "emailId should least 3 char "),
-  password: z.string().min(3, "password should least 3 char "),
-});
+// Schema validation for sign up
+const signupSchema = z
+  .object({
+    firstName: z
+      .string()
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name is too long"),
+    emailId: z
+      .string()
+      .min(1, "Email is required")
+      .email("Please enter a valid email address"),
+    password: z
+      .string()
+      .min(6, "Password must be at least 6 characters"),
+    confirmPassword: z
+      .string()
+      .min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 const Signup = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({ resolver: zodResolver(signupSchema) });
+  } = useForm({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      firstName: "",
+      emailId: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const onSubmit = async (data) => {
+    setIsLoading(true);
+    setServerError("");
+
+    try {
+      console.log("Signup data:", data);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Navigate to login or home after successful signup
+      navigate("/login");
+    } catch (err) {
+      setServerError("Registration failed. Please check your details and retry.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-[#020617] min-h-screen flex justify-center items-center">
-      <form
-        onSubmit={handleSubmit((data) => console.log(data))}
-        className="bg-[#0f172a] p-8 rounded-2xl shadow-2xl w-full max-w-md flex flex-col gap-4 border border-green-500"
-      >
-        <h2 className="text-2xl font-bold text-center text-green-400">
-          Register
-        </h2>
+    <div className="bg-[#020617] min-h-screen flex flex-col justify-center items-center px-4 py-12 selection:bg-green-500 selection:text-black">
+      {/* Background Ambient Glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-green-500/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 
-        <input
-          {...register("firstName")}
-          placeholder="Enter name"
-          className="p-3 bg-[#020617] text-white border border-green-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 placeholder-gray-400"
-        />
-        {errors.firstName && (
-          <span className="text-green-400 text-sm">
-            {errors.firstName.message}
+      {/* Brand Logo Header */}
+      <div className="mb-6 text-center">
+        <Link to="/" className="inline-flex items-center gap-2.5 group">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-lg shadow-green-500/30 group-hover:scale-105 transition-transform">
+            &lt;/&gt;
+          </div>
+          <span className="font-extrabold text-2xl tracking-tight text-white">
+            Code<span className="text-green-400">Forge</span>
           </span>
+        </Link>
+      </div>
+
+      {/* Main Signup Card */}
+      <div className="w-full max-w-md bg-[#0f172a] border border-slate-800 rounded-3xl p-8 sm:p-9 shadow-2xl shadow-black/50">
+        <div className="mb-7 text-center">
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            Create Account
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
+            Join thousands of developers leveling up their algorithmic skills
+          </p>
+        </div>
+
+        {serverError && (
+          <div className="mb-5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{serverError}</span>
+          </div>
         )}
 
-        <input type="email"
-          {...register("emailId")}
-          placeholder="Enter email"
-          className="p-3 bg-[#020617] text-white border border-green-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 placeholder-gray-400"
-        />
-        {errors.emailId && (
-          <span className="text-green-400 text-sm">
-            {errors.emailId.message}
-          </span>
-        )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Full Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Full Name
+            </label>
+            <input
+              type="text"
+              placeholder="Alex Chen"
+              {...register("firstName")}
+              className={`w-full px-4 py-2.5 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
+                errors.firstName
+                  ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                  : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+              }`}
+            />
+            {errors.firstName && (
+              <p className="text-rose-400 text-xs mt-1 font-medium flex items-center gap-1">
+                <span>•</span>
+                <span>{errors.firstName.message}</span>
+              </p>
+            )}
+          </div>
 
-        <input
-          {...register("password")}
-          placeholder="Enter password"
-          type="password"
-          className="p-3 bg-[#020617] text-white border border-green-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 placeholder-gray-400"
-        />
-        {errors.password && (
-          <span className="text-green-400 text-sm">
-            {errors.password.message}
-          </span>
-        )}
+          {/* Email Field */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Email Address
+            </label>
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              {...register("emailId")}
+              className={`w-full px-4 py-2.5 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
+                errors.emailId
+                  ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                  : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+              }`}
+            />
+            {errors.emailId && (
+              <p className="text-rose-400 text-xs mt-1 font-medium flex items-center gap-1">
+                <span>•</span>
+                <span>{errors.emailId.message}</span>
+              </p>
+            )}
+          </div>
 
-        <button
-          type="Submit"
-          className="bg-green-500 hover:bg-green-600 text-black py-3 rounded-lg font-semibold transition duration-200 shadow-lg shadow-green-500/30"
-        >
-          Submit
-        </button>
-      </form>
+          {/* Password Field */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                {...register("password")}
+                className={`w-full pl-4 pr-11 py-2.5 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
+                  errors.password
+                    ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                    : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                className="absolute right-3.5 top-2.5 text-xs text-slate-400 hover:text-white transition px-1 py-0.5"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-rose-400 text-xs mt-1 font-medium flex items-center gap-1">
+                <span>•</span>
+                <span>{errors.password.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Confirm Password Field */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Confirm Password
+            </label>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              {...register("confirmPassword")}
+              className={`w-full px-4 py-2.5 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
+                errors.confirmPassword
+                  ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                  : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+              }`}
+            />
+            {errors.confirmPassword && (
+              <p className="text-rose-400 text-xs mt-1 font-medium flex items-center gap-1">
+                <span>•</span>
+                <span>{errors.confirmPassword.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full mt-3 py-3 px-4 bg-green-500 hover:bg-green-400 text-black font-extrabold text-sm rounded-xl transition duration-200 shadow-lg shadow-green-500/25 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+          >
+            {isLoading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin inline-block" />
+                <span>Creating account...</span>
+              </>
+            ) : (
+              <span>Create Account</span>
+            )}
+          </button>
+        </form>
+
+        {/* Footer Switch Link */}
+        <div className="mt-7 pt-6 border-t border-slate-800 text-center">
+          <p className="text-xs text-slate-400">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-bold text-green-400 hover:text-green-300 hover:underline transition ml-1"
+            >
+              Sign In
+            </Link>
+          </p>
+          <div className="mt-4">
+            <Link
+              to="/"
+              className="text-xs text-slate-500 hover:text-slate-300 transition"
+            >
+              &larr; Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-//42
 export default Signup;
