@@ -1,4 +1,3 @@
-
 const express = require("express");
 const { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug } = require("../controlers/QuesControllers");
 const quesRouter = express.Router();

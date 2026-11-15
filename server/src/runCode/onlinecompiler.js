@@ -17,5 +17,6 @@ const main = async () => {
     });
     console.log(judged); // accepted 100
 }
-           
+
+module.exports = main;
 main();
