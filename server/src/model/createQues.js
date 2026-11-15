@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const questionSchema = new Schema(
     {
         questionId: {
-            type: String,
+            type: Number,
             required: true,
             unique: true,
             trim: true
@@ -70,7 +70,8 @@ const questionSchema = new Schema(
         isPremium: {
             type: Boolean,
             default: false
-        }
+        },
+        
     },
     {
         timestamps: true

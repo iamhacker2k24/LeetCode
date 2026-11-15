@@ -1,3 +1,5 @@
+
+
 const runQues = (req,res) => {   //this is  with default test case                             
     try {
         
@@ -67,4 +69,17 @@ const isStar = (req,res) => { //by usong this user can star question
     }
 }
 
-module.exports = { subMitques, runQues, runQuesWithTestCase, likeQues, isStar }
+const Markquestion=(req,res)=> {   //this will help to mark question 
+    try {
+
+    } catch (error) {
+        console.log("error from questionSubmition")
+        console.log(error.message)
+        return resizeBy.status(400).josn({
+            sucess: true,
+            msg: "error from Question submition "
+        })
+    }
+}
+
+module.exports = {  runQues, runQuesWithTestCase, subMitques,likeQues, isStar,Markquestion }                                                              

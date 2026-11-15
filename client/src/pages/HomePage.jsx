@@ -1,5 +1,14 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router";
+import {
+  FiZap,
+  FiPlay,
+  FiTarget,
+  FiSearch,
+  FiX,
+  FiBriefcase,
+  FiAward,
+} from "react-icons/fi";
 
 // Mock problem database representing real LeetCode problems
 const INITIAL_PROBLEMS = [
@@ -427,7 +436,7 @@ const HomePage = () => {
                   href="#daily-challenge"
                   className="px-5 py-3 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-slate-700/80 text-white font-semibold text-sm transition flex items-center gap-2"
                 >
-                  <span className="text-amber-400">⚡</span>
+                  <FiZap className="w-3.5 h-3.5 text-amber-400" />
                   <span>Daily Challenge</span>
                 </a>
 
@@ -522,7 +531,7 @@ const HomePage = () => {
                       </>
                     ) : (
                       <>
-                        <span>▶</span>
+                        <FiPlay className="w-3 h-3 text-black fill-black" />
                         <span>Run Code</span>
                       </>
                     )}
@@ -562,8 +571,8 @@ const HomePage = () => {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
-                🎯
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <FiTarget className="w-6 h-6 text-amber-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -712,15 +721,13 @@ const HomePage = () => {
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-[#020617] border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
               />
-              <span className="absolute left-3 top-2.5 text-slate-500 text-sm">
-                🔍
-              </span>
+              <FiSearch className="absolute left-3 top-3 text-slate-500 w-3.5 h-3.5" />
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="absolute right-3 top-2 text-xs text-slate-400 hover:text-white"
+                  className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-white"
                 >
-                  ✕
+                  <FiX className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -968,8 +975,8 @@ const HomePage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl hover:border-green-500/40 transition">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 text-xl font-bold mb-4">
-              ⚡
+            <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 mb-4">
+              <FiZap className="w-5 h-5 text-green-400" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
               Sub-Millisecond Code Runner
@@ -981,8 +988,8 @@ const HomePage = () => {
           </div>
 
           <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl hover:border-green-500/40 transition">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xl font-bold mb-4">
-              🏢
+            <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 mb-4">
+              <FiBriefcase className="w-5 h-5 text-teal-400" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
               Company-Verified Question Banks
@@ -994,8 +1001,8 @@ const HomePage = () => {
           </div>
 
           <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl hover:border-green-500/40 transition">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl font-bold mb-4">
-              🏆
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4">
+              <FiAward className="w-5 h-5 text-amber-400" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
               Weekly Competitive Contests

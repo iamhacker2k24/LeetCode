@@ -130,9 +130,9 @@ const deleteQues = async (req, res) => {
 }
 
 
-const getAllques = async () => {
+const getAllques = async (req, res) => {
     try {
-        const allQues = await Question.find({}).select("title isPremium _id questionId slug");
+        const allQues = await Question.find({}).select("title isPremium _id questionId slug difficulty");
         return res.status(200).json({
             success: true,
             data: allQues
@@ -149,9 +149,10 @@ const getAllques = async () => {
 const getOneques = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(id)
-        const data = await Question.findById({ _id: id }).select("-questionId");
+        console.log(typeof Number(id))
+        const data = await Question.findOne({ questionId: Number(id) })
         if (!data) {
+            console.log(data)
             return res.status(500).json({
                 success: false,
                 message: "Internal server error"
@@ -197,4 +198,116 @@ const getOnequesBySlug = async (req, res) => {
     }
 }
 
-module.exports = { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug }
+
+
+
+const CreateTestCse = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+
+
+const editTestCase = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+const deleteTestCase = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+const getTestCaseByid = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+
+const createCodeTemplate = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+
+}
+
+
+
+const editCodeTemplate = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+
+const deleteCodeTemplate = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+
+const getCodeTemplateByid = (req, res) => {
+    try {
+
+    } catch (error) {
+        console.error("getAll ques error ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+
+    }
+}
+module.exports = {
+    createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug,
+    CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate, 
+    editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid
+}

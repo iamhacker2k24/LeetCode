@@ -3,16 +3,17 @@ import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { loginUser } from "../services/api";
 
 // Schema validation for login
 const loginSchema = z.object({
-  emailId: z
+  email: z
     .string()
     .min(1, "Email is required")
     .email("Please enter a valid email address"),
   password: z
     .string()
-    .min(6, "Password must be at least 6 characters"),
+    .min(1, "Password is required"),
 });
 
 const Login = () => {
@@ -28,7 +29,7 @@ const Login = () => {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      emailId: "",
+      email: "",
       password: "",
     },
   });
@@ -38,14 +39,17 @@ const Login = () => {
     setServerError("");
 
     try {
-      // Form submission logic
-      console.log("Login data:", data);
-      // Simulating slight async processing or future API integration
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      // Navigate to homepage or dashboard after successful authentication
-      navigate("/");
+      const response = await loginUser(data.email, data.password);
+      if (response?.success) {
+        if (response.msg) {
+          localStorage.setItem("user", JSON.stringify(response.msg));
+        }
+        navigate("/dashboard");
+      } else {
+        setServerError(response?.msg || "Login failed. Please try again.");
+      }
     } catch (err) {
-      setServerError("Invalid email or password. Please try again.");
+      setServerError(err.message || "Failed to sign in. Please verify your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -97,9 +101,9 @@ const Login = () => {
                 type="email"
                 autoComplete="email"
                 placeholder="name@example.com"
-                {...register("emailId")}
+                {...register("email")}
                 className={`w-full px-4 py-3 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
-                  errors.emailId
+                  errors.email
                     ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
                     : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
                 }`}
@@ -108,10 +112,10 @@ const Login = () => {
                 ✉
               </span>
             </div>
-            {errors.emailId && (
+            {errors.email && (
               <p className="text-rose-400 text-xs mt-1.5 font-medium flex items-center gap-1">
                 <span>•</span>
-                <span>{errors.emailId.message}</span>
+                <span>{errors.email.message}</span>
               </p>
             )}
           </div>
