@@ -5,7 +5,7 @@ const TestCase = new Schema({
     testCaseId: {
         type: Number,
         // required: true, 
-        unique: true,                   // no duplicate test case IDs
+        // unique: true,                   // no duplicate test case IDs
     },
     questionId: {
         type: Number,

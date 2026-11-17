@@ -202,14 +202,27 @@ const getOnequesBySlug = async (req, res) => {
 
 const CreateTestCse = async (req, res) => {
     try {
-        //get question id 
-        const { id } = req.params.id;
-        const { data } = req.body;
+        const { questionId } = req.body;
 
-        await testCase.create({})
+        //   "testCaseId": 11,
+        //   "questionId": 4,
+        //   "questionSlug": "median-of-two-sorted-arrays",
+        //   "order": 2,
+        //   "input": "nums1 = [1,2], nums2 = [3,4]",
+        //   "expectedOutput": "2.50000",
+        //   "explanation": "merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5.",
+        //   "isHidden": false,
+        //   "isSample
+
+
+        await testCase.create(req.body)
+        return res.status(200).json({
+            success: true,
+            message: " created propery  sucessfully"
+        });
 
     } catch (error) {
-        console.error("getAll ques error ", error);
+        console.error("ques error ", error.message);
         return res.status(500).json({
             success: false,
             message: "Internal server error"
