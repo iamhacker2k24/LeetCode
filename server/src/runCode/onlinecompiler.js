@@ -5,19 +5,24 @@ const client = new OnlineCompiler({
     apiKey: process.env.ONLINECOMPILER_API_KEY
 }); // reads ONLINECOMPILER_API_KEY
 
+const RunCompiler = async (code, result,language) => {
+    // console.log(result);
 
-const RunCompiler = async () => {
+    // Map to the format the API expects
+    const formattedTests = result.map(tc => ({
+        input: tc.input,
+        expected_output: tc.expectedOutput
+    }));
+    console.log(formattedTests)
+
     const judged = await client.runTests({
-        compiler: 'python-3.14',
-        code: 'a, b = map(int, input().split())\nprint(a + b)',
-        tests: [
-            { input: '1 2', expected_output: '3' },
-            { input: '10 20', expected_output: '40', hidden: true },
-        ],
+        compiler: language,
+        code: code,
+        tests: formattedTests
     });
-    return judged;
 
-    console.log(judged); // accepted 100
+    // console.log(judged);
+    return judged;
 }
 
 module.exports = RunCompiler;

@@ -1,3 +1,4 @@
+const testCase = require("../model/testCase");
 const RunCompiler = require("../runCode/onlinecompiler");
 
 
@@ -12,11 +13,26 @@ const runQues = async (req, res) => {   //this is  with default test case
                 msg: "pls fill all value "
             })
         }
-        console.log(req.body)
-        const data = await RunCompiler();
-        return res.status(400).json({
+        // console.log(req.body)
+        const testCaseData = await testCase.find({ questionId: id }).select("input expectedOutput -_id")
+
+        const data = await RunCompiler(code, testCaseData, language);
+
+        // console.log(data)
+
+        //here need to implement user meed to store user dataproperly ok 
+
+        return res.status(200).json({
             sucess: true,
-            data
+            data: {
+                verdict: data.verdict,
+                score: data.score,
+                passed: data.passed,
+                total: data.total,
+                memory_limit: data.memory_limit,
+                summary: data.summary,
+                tests: data.tests
+            }
         })
 
     } catch (error) {
