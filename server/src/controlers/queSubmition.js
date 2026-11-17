@@ -1,6 +1,7 @@
+const RunCompiler = require("../runCode/onlinecompiler");
 
 
-const runQues = (req, res) => {   //this is  with default test case                             
+const runQues = async (req, res) => {   //this is  with default test case                             
     try {
         const { id } = req.params;
         const { code, language, timeTaken } = req.body
@@ -11,7 +12,12 @@ const runQues = (req, res) => {   //this is  with default test case
                 msg: "pls fill all value "
             })
         }
-        
+        console.log(req.body)
+        const data = await RunCompiler();
+        return res.status(400).json({
+            sucess: true,
+            data
+        })
 
     } catch (error) {
         console.log("error from questionSubmition")
