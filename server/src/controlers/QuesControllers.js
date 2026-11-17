@@ -77,11 +77,10 @@ const createQues = async (req, res) => {
 };
 
 
-const editQues = async (req, res) => {
+const editQues = async (req, res) => {  // this will works on based on slung ok 
     try {
-        const { id } = req.params;
-        console.log(id)
-        const UpdateStatus = await Question.findByIdAndUpdate(id,
+        const { slug } = req.body
+        const UpdateStatus = await Question.findOneAndUpdate({ slug },
             { $set: req.body },
             {
                 new: true,
@@ -94,7 +93,7 @@ const editQues = async (req, res) => {
             UpdateStatus
         });
     } catch (error) {
-        console.error("getAll ques error ", error);
+        console.error("ques error ", error.message);
         return res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -201,8 +200,13 @@ const getOnequesBySlug = async (req, res) => {
 }
 
 
-const CreateTestCse = (req, res) => {
+const CreateTestCse = async (req, res) => {
     try {
+        //get question id 
+        const { id } = req.params.id;
+        const { data } = req.body;
+
+        await testCase.create({})
 
     } catch (error) {
         console.error("getAll ques error ", error);
