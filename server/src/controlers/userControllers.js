@@ -139,4 +139,27 @@ const registration = async (req, res) => {
 
 }
 
-module.exports = { login, registration }
+const logout = (req, res) => {
+    try {
+        res.clearCookie('token')
+        return res.status(200).json({ success: true, message: 'Logged out successfully' });
+        // need to here proper db to block that token paramently ok
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            msg: `error from registration ${error.message}`
+        })
+    }
+
+}
+
+
+const forgetPassword = (req, res) => {
+    try {
+
+    } catch (error) {
+
+    }
+}
+
+module.exports = { login, registration, logout, forgetPassword }
