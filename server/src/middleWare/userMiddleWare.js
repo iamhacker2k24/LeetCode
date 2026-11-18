@@ -1,0 +1,34 @@
+const jwt = require("jsonwebtoken");
+const userData = require("../model/userData");
+require('dotenv').config()
+
+const userMiddleWare = async (req, res, next) => {
+    try {
+
+        const { token } = req.cookies;
+        console.log(token)
+        const payload = await jwt.verify(token, process.env.JWT_SECRET)
+
+        const { id } = payload;
+        if (!id) {
+            return res.status(400).json({
+                sucess: false,
+                msg: "error from token"
+            })
+        }
+        const findUser = await userData.findById(id)
+        if (!findUser) {
+            return res.status(400).json({
+                sucess: false,
+                msg: "error from token"
+            })
+        }
+
+        req.user = id
+        next();
+    } catch (error) {
+        res.send("error " + error.message)
+    }
+}
+
+module.exports = { userMiddleWare }

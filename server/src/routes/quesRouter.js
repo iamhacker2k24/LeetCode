@@ -2,6 +2,7 @@ const express = require("express");
 const { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug,
     CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate,
     editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid } = require("../controlers/QuesControllers");
+const { userMiddleWare } = require("../middleWare/userMiddleWare");
 const quesRouter = express.Router();
 
 quesRouter.post("/createques", createQues) //admin only 
@@ -12,7 +13,7 @@ quesRouter.delete("/deleteques", deleteQues)  //admin only
 
 
 
-quesRouter.get("/getallques", getAllques) //only get all quesions
+quesRouter.get("/getallques", userMiddleWare, getAllques) //only get all quesions
 quesRouter.get("/getOneques/:id", getOneques) //only specific question details ok
 quesRouter.get("/getquesbyslung/:slug", getOnequesBySlug) //only specific question details ok
 
