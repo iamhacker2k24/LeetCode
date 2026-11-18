@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
-import { getAllQuestions } from "../services/api";
+import { getAllQuestions, logoutUser } from "../services/api";
 import {
   FiSearch,
   FiX,
@@ -106,10 +106,16 @@ const Dashboard = () => {
   };
 
   // Sign out handler
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    navigate("/logout");
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      navigate("/logout");
+    }
   };
 
   // Filtered Questions
@@ -237,6 +243,12 @@ const Dashboard = () => {
               <span className="px-3 py-1.5 rounded-lg text-white font-semibold bg-slate-800/80">
                 Problems
               </span>
+              <Link
+                to="/profile"
+                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
+              >
+                User Dashboard
+              </Link>
               <a
                 href="#contests"
                 className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
@@ -273,14 +285,18 @@ const Dashboard = () => {
             </div>
 
             {/* User Avatar & Name */}
-            <div className="flex items-center gap-2 pl-2">
-              <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/40 text-green-400 font-bold text-xs flex items-center justify-center">
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 pl-2 hover:opacity-85 transition group"
+              title="View User Dashboard"
+            >
+              <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/40 text-green-400 font-bold text-xs flex items-center justify-center group-hover:scale-105 transition-transform">
                 {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
               </div>
-              <span className="text-sm font-semibold text-white hidden md:inline-block max-w-[120px] truncate">
+              <span className="text-sm font-semibold text-white hidden md:inline-block max-w-[120px] truncate group-hover:text-green-400 transition-colors">
                 {user?.name || user?.email || "User"}
               </span>
-            </div>
+            </Link>
 
             {/* Sign Out Button */}
             <button

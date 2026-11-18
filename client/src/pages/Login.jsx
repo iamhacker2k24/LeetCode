@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { loginUser } from "../services/api";
+import { loginUser, checkAuthUser } from "../services/api";
 import { FiAlertTriangle, FiMail, FiArrowLeft } from "react-icons/fi";
 
 // Schema validation for login
@@ -21,7 +21,34 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
+
+  // If user already has a valid session cookie, redirect to /dashboard
+  useEffect(() => {
+    let isMounted = true;
+    const verifyAuth = async () => {
+      try {
+        const { isAuthenticated } = await checkAuthUser();
+        if (isAuthenticated && isMounted) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+      }
+    };
+
+    verifyAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   const {
     register,
@@ -55,6 +82,17 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="bg-[#020617] min-h-screen flex flex-col items-center justify-center text-slate-300">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-lg shadow-green-500/30 mb-4 animate-pulse">
+          &lt;/&gt;
+        </div>
+        <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#020617] min-h-screen flex flex-col justify-center items-center px-4 py-12 selection:bg-green-500 selection:text-black">

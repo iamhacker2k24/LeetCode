@@ -4,6 +4,8 @@ import {
   getOneQuestion,
   getCodeTemplateById,
   getTestCasesById,
+  logoutUser,
+  runQuestion,
 } from "../services/api";
 import {
   FiFileText,
@@ -13,6 +15,7 @@ import {
   FiLock,
   FiRotateCcw,
   FiCheckCircle,
+  FiXCircle,
   FiPlay,
   FiCheck,
   FiHome,
@@ -37,6 +40,15 @@ const STARTER_CODE_TEMPLATES = {
   cpp: `#include <iostream>\n#include <vector>\n\nclass Solution {\npublic:\n    void solve() {\n        // Write your code solution here\n    }\n};`,
   c: `void solve() {\n    // Write your code solution here\n}`,
   javascript: `/**\n * @param {any} input\n * @return {any}\n */\nvar solve = function(input) {\n    // Write your code solution here\n    \n};`,
+};
+
+const LANGUAGE_API_MAP = {
+  python: "python-3.14",
+  py: "python-3.14",
+  java: "java",
+  cpp: "cpp",
+  c: "c",
+  javascript: "javascript",
 };
 
 const ProblemPage = () => {
@@ -77,7 +89,9 @@ const ProblemPage = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
+  const [runError, setRunError] = useState("");
   const [activeTestCaseIndex, setActiveTestCaseIndex] = useState(0);
+  const [activeResultCaseIndex, setActiveResultCaseIndex] = useState(0);
 
   // Timer State
   const [seconds, setSeconds] = useState(0);
@@ -339,39 +353,82 @@ const ProblemPage = () => {
   };
 
   // Run code against backend testcases
-  const handleRunCode = () => {
+  const handleRunCode = async () => {
     setIsRunning(true);
     setIsConsoleExpanded(true);
     setActiveBottomTab("result");
     setExecutionResult(null);
+    setRunError("");
+    setActiveResultCaseIndex(0);
 
-    setTimeout(() => {
-      setIsRunning(false);
+    const questionTargetId = question?.questionId || id;
+    const apiLang =
+      LANGUAGE_API_MAP[selectedLang?.toLowerCase()] || selectedLang;
 
-      const cases =
-        testCases.length > 0
-          ? testCases
-          : [
-              {
-                input: "Sample input",
-                expectedOutput: "Sample output",
-              },
-            ];
+    try {
+      const response = await runQuestion(questionTargetId, {
+        code,
+        language: apiLang,
+        timeTaken: seconds || 0,
+      });
 
-      const details = cases.map((tc) => ({
-        input: tc.input || "No input specified",
-        expected: tc.expectedOutput || "N/A",
-        actual: tc.expectedOutput || "N/A",
-      }));
+      const resData = response?.data || response;
+      const tests = Array.isArray(resData?.tests) ? resData.tests : [];
+
+      // Calculate execution runtime and memory
+      let displayTime = "N/A";
+      let displayMemory = "N/A";
+      if (tests.length > 0) {
+        const times = tests
+          .map((t) => parseFloat(t.time) || 0)
+          .filter((t) => t > 0);
+        if (times.length > 0) {
+          const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+          displayTime = `${(avgTime * 1000).toFixed(0)} ms`;
+        }
+
+        const mems = tests
+          .map((t) => parseInt(t.memory) || 0)
+          .filter((m) => m > 0);
+        if (mems.length > 0) {
+          const maxMem = Math.max(...mems);
+          displayMemory = `${(maxMem / 1024).toFixed(1)} MB`;
+        }
+      }
+
+      const rawVerdict = (resData?.verdict || "").toLowerCase();
+      const isAccepted = rawVerdict === "accepted";
+      const formattedVerdict = isAccepted
+        ? "Accepted"
+        : (resData?.verdict || "Evaluation Finished")
+            .replace(/_/g, " ")
+            .toUpperCase();
 
       setExecutionResult({
-        status: "Accepted",
-        runtime: "48 ms",
-        memory: "16.2 MB",
-        casesPassed: `${cases.length}/${cases.length} Testcases Passed`,
-        details,
+        verdict: formattedVerdict,
+        isAccepted,
+        score: resData?.score,
+        passed: resData?.passed ?? 0,
+        total: resData?.total ?? tests.length,
+        memoryLimit: resData?.memory_limit,
+        summary:
+          resData?.summary ||
+          `${resData?.passed ?? 0} of ${resData?.total ?? tests.length} sample tests passed.`,
+        runtime: displayTime,
+        memory: displayMemory,
+        tests: tests.map((t, idx) => ({
+          ...t,
+          input: testCases[idx]?.input || `Test Case ${idx + 1}`,
+          expectedOutput: testCases[idx]?.expectedOutput || "N/A",
+          explanation: testCases[idx]?.explanation || "",
+        })),
       });
-    }, 700);
+    } catch (err) {
+      console.error("Run code error:", err);
+      setRunError(err.message || "Failed to execute code on backend.");
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   // Submit code against backend testcases
@@ -411,10 +468,16 @@ const ProblemPage = () => {
     }, 950);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    navigate("/logout");
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      navigate("/logout");
+    }
   };
 
   return (
@@ -556,12 +619,20 @@ const ProblemPage = () => {
 
                 <div className="py-1">
                   <Link
+                    to="/profile"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center gap-2.5 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                  >
+                    <FiActivity className="w-3.5 h-3.5 text-green-400" />
+                    <span>User Dashboard & Stats</span>
+                  </Link>
+                  <Link
                     to="/dashboard"
                     onClick={() => setShowProfileMenu(false)}
                     className="flex items-center gap-2.5 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition"
                   >
                     <FiBarChart2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Dashboard & Progress</span>
+                    <span>Problem Repository</span>
                   </Link>
                   <Link
                     to="/"
@@ -865,7 +936,7 @@ const ProblemPage = () => {
                 onChange={(e) => handleLangChange(e.target.value)}
                 className="bg-[#020617] text-white border border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-400 capitalize"
               >
-                <option value="python">Python 3</option>
+                <option value="python">Python (3.14)</option>
                 <option value="java">Java</option>
                 <option value="cpp">C++</option>
                 <option value="c">C</option>
@@ -1092,22 +1163,49 @@ const ProblemPage = () => {
                         <span>
                           {isSubmitting
                             ? "Judging solution against all test cases..."
-                            : "Running test cases..."}
+                            : "Running code against sample test cases..."}
                         </span>
                       </div>
+                    ) : runError ? (
+                      <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs">
+                        <div className="flex items-center gap-2 text-rose-400 font-bold mb-1">
+                          <FiAlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>Execution Failed</span>
+                        </div>
+                        <p className="text-slate-300 font-mono mt-1 break-words whitespace-pre-wrap">
+                          {runError}
+                        </p>
+                      </div>
                     ) : executionResult ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-green-400 flex items-center gap-1.5">
-                              <FiCheckCircle className="w-4 h-4 text-green-400" />
-                              <span>{executionResult.status}</span>
+                      <div className="space-y-4">
+                        {/* Status Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`text-sm font-black flex items-center gap-1.5 ${
+                                executionResult.isAccepted
+                                  ? "text-green-400"
+                                  : "text-rose-400"
+                              }`}
+                            >
+                              {executionResult.isAccepted ? (
+                                <FiCheckCircle className="w-4 h-4 text-green-400" />
+                              ) : (
+                                <FiXCircle className="w-4 h-4 text-rose-400" />
+                              )}
+                              <span>{executionResult.verdict}</span>
                             </span>
                             <span className="text-slate-400 text-[11px]">
-                              ({executionResult.casesPassed})
+                              ({executionResult.summary})
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-slate-300 text-[11px]">
+
+                          <div className="flex items-center gap-3 text-slate-300 text-[11px] font-mono">
+                            {executionResult.score !== undefined && (
+                              <span className="px-2 py-0.5 rounded bg-slate-800 text-green-400 font-bold">
+                                Score: {executionResult.score}
+                              </span>
+                            )}
                             <span>
                               Runtime: <strong className="text-white">{executionResult.runtime}</strong>
                             </span>
@@ -1117,6 +1215,7 @@ const ProblemPage = () => {
                           </div>
                         </div>
 
+                        {/* Submission Specific Banner */}
                         {executionResult.isSubmission && (
                           <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs flex items-start gap-2.5">
                             <FiAward className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
@@ -1131,27 +1230,99 @@ const ProblemPage = () => {
                           </div>
                         )}
 
-                        {executionResult.details && (
-                          <div className="space-y-1.5">
-                            {executionResult.details.map((d, idx) => (
-                              <div
-                                key={idx}
-                                className="p-2.5 rounded-lg bg-[#020617] border border-slate-800 flex flex-col gap-1 text-[11px]"
-                              >
-                                <div className="text-slate-400">
-                                  <span className="text-slate-500">Input:</span> {d.input}
+                        {/* Test Case Result Tabs (LeetCode style) */}
+                        {executionResult.tests && executionResult.tests.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+                              {executionResult.tests.map((t, idx) => {
+                                const casePassed =
+                                  (t.verdict || "").toLowerCase() === "accepted";
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => setActiveResultCaseIndex(idx)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition shrink-0 flex items-center gap-1.5 ${
+                                      activeResultCaseIndex === idx
+                                        ? "bg-slate-700 text-white font-bold"
+                                        : "bg-[#020617] text-slate-400 hover:text-slate-200"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full ${
+                                        casePassed ? "bg-green-400" : "bg-rose-400"
+                                      }`}
+                                    />
+                                    <span>Case {idx + 1}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Active Result Case Details */}
+                            {executionResult.tests[activeResultCaseIndex] && (
+                              <div className="space-y-2.5">
+                                {/* Input */}
+                                <div>
+                                  <span className="text-slate-400 text-[11px] block mb-1">
+                                    Input:
+                                  </span>
+                                  <div className="bg-[#020617] p-2.5 rounded-xl border border-slate-800 text-slate-200 text-xs font-mono select-text">
+                                    {executionResult.tests[activeResultCaseIndex].input}
+                                  </div>
                                 </div>
-                                <div className="text-green-400">
-                                  <span className="text-slate-500">Output:</span> {d.actual}
+
+                                {/* Actual Output */}
+                                <div>
+                                  <span className="text-slate-400 text-[11px] block mb-1">
+                                    Your Output:
+                                  </span>
+                                  <div
+                                    className={`bg-[#020617] p-2.5 rounded-xl border border-slate-800 text-xs font-mono select-text whitespace-pre-wrap ${
+                                      (executionResult.tests[activeResultCaseIndex].verdict || "").toLowerCase() === "accepted"
+                                        ? "text-green-400"
+                                        : "text-rose-400"
+                                    }`}
+                                  >
+                                    {executionResult.tests[activeResultCaseIndex].output !== undefined &&
+                                    executionResult.tests[activeResultCaseIndex].output !== null &&
+                                    executionResult.tests[activeResultCaseIndex].output !== ""
+                                      ? executionResult.tests[activeResultCaseIndex].output
+                                      : "(No stdout output)"}
+                                  </div>
                                 </div>
+
+                                {/* Expected Output */}
+                                {executionResult.tests[activeResultCaseIndex].expectedOutput &&
+                                  executionResult.tests[activeResultCaseIndex].expectedOutput !== "N/A" && (
+                                    <div>
+                                      <span className="text-slate-400 text-[11px] block mb-1">
+                                        Expected Output:
+                                      </span>
+                                      <div className="bg-[#020617] p-2.5 rounded-xl border border-slate-800 text-slate-300 text-xs font-mono select-text">
+                                        {executionResult.tests[activeResultCaseIndex].expectedOutput}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* Error Output if any */}
+                                {executionResult.tests[activeResultCaseIndex].error && (
+                                  <div>
+                                    <span className="text-rose-400 text-[11px] block mb-1 font-semibold">
+                                      Stderr / Execution Error:
+                                    </span>
+                                    <div className="bg-rose-950/30 p-2.5 rounded-xl border border-rose-500/30 text-rose-300 text-xs font-mono select-text whitespace-pre-wrap">
+                                      {executionResult.tests[activeResultCaseIndex].error}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="py-6 text-center text-slate-500 text-xs">
-                        Click "Run" or "Submit" above to evaluate your code.
+                        Click "Run" above to evaluate your code.
                       </div>
                     )}
                   </div>

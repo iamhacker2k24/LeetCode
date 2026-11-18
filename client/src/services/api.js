@@ -10,10 +10,15 @@ export const BACKEND_URL = rawBackendUrl.startsWith("http")
 export const API_ENDPOINTS = {
   LOGIN: `${BACKEND_URL}/api/user/login`,
   REGISTRATION: `${BACKEND_URL}/api/user/registration`,
+  LOGOUT: `${BACKEND_URL}/api/user/logout`,
+  CHECK_AUTH: `${BACKEND_URL}/api/user/me`,
   GET_ALL_QUESTIONS: `${BACKEND_URL}/api/admin/qs/getallques`,
   GET_ONE_QUESTION: (id) => `${BACKEND_URL}/api/admin/qs/getOneques/${id}`,
   GET_CODE_TEMPLATE: (id) => `${BACKEND_URL}/api/admin/qs/getcodetemplatebyid/${id}`,
   GET_TEST_CASES: (id) => `${BACKEND_URL}/api/admin/qs/gettestcasebyid/${id}`,
+  RUN_QUESTION: (id) => `${BACKEND_URL}/api/user/qs/runques/${id}`,
+  CREATE_USER_DETAILS: `${BACKEND_URL}/api/user/userdetails`,
+  CHECK_UNIQUE_USERNAME: `${BACKEND_URL}/api/user/getuniqueusername`,
 };
 
 export async function loginUser(email, password) {
@@ -60,6 +65,53 @@ export async function registerUser(name, email, password) {
   }
 
   return data;
+}
+
+export async function logoutUser() {
+  const response = await fetch(API_ENDPOINTS.LOGOUT, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include", // Clear cookie on client browser
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok || !data?.success) {
+    const errorMsg =
+      (typeof data?.msg === "string" ? data.msg : null) ||
+      data?.message ||
+      "Logout failed.";
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
+export async function checkAuthUser() {
+  try {
+    const response = await fetch(API_ENDPOINTS.CHECK_AUTH, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Send session cookies
+    });
+
+    const data = await response.json().catch(() => null);
+    const isSuccess = data?.sucess === true || data?.success === true;
+
+    return {
+      isAuthenticated: response.ok && isSuccess,
+      data,
+    };
+  } catch (err) {
+    return {
+      isAuthenticated: false,
+      error: err.message,
+    };
+  }
 }
 
 export async function getAllQuestions() {
@@ -147,6 +199,38 @@ export async function getTestCasesById(id) {
       (typeof data?.msg === "string" ? data.msg : null) ||
       data?.message ||
       `Failed to fetch test cases for question #${id}.`;
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
+export async function runQuestion(id, { code, language, timeTaken }) {
+  const url = API_ENDPOINTS.RUN_QUESTION(id);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      code,
+      language,
+      timeTaken: typeof timeTaken === "number" ? timeTaken : 0,
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  // Notice backend might return { "sucess": true } or { "success": true }
+  const isSuccess = data?.sucess === true || data?.success === true;
+
+  if (!response.ok || !isSuccess) {
+    const errorMsg =
+      (typeof data?.msg === "string" ? data.msg : null) ||
+      data?.message ||
+      data?.error ||
+      `Execution failed for question #${id}.`;
     throw new Error(errorMsg);
   }
 

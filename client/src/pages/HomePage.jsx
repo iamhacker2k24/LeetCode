@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router";
+import React, { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router";
+import { checkAuthUser } from "../services/api";
 import {
   FiZap,
   FiPlay,
@@ -249,6 +250,42 @@ const TOPICS = [
 ];
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check if user is already logged in via backend session cookie (/api/user/me)
+  useEffect(() => {
+    let isMounted = true;
+    const verifyAuth = async () => {
+      try {
+        const { isAuthenticated, data } = await checkAuthUser();
+        if (isAuthenticated && isMounted) {
+          if (data?.msg && typeof data.msg === "object") {
+            try {
+              localStorage.setItem("user", JSON.stringify(data.msg));
+            } catch {
+              // ignore
+            }
+          }
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+      } catch (err) {
+        console.error("Auth check error on HomePage:", err);
+      } finally {
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+      }
+    };
+
+    verifyAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+
   const [search, setSearch] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
   const [selectedTopic, setSelectedTopic] = useState("All");
@@ -315,6 +352,17 @@ const HomePage = () => {
   const solvedCount = solvedState.size;
   const totalCount = INITIAL_PROBLEMS.length;
   const progressPercent = Math.round((solvedCount / totalCount) * 100);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center text-slate-300">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-lg shadow-green-500/30 mb-4 animate-pulse">
+          &lt;/&gt;
+        </div>
+        <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-green-500 selection:text-black">

@@ -1,39 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { registerUser } from "../services/api";
-import { FiAlertTriangle, FiArrowLeft } from "react-icons/fi";
+import { registerUser, checkAuthUser } from "../services/api";
+import { FiAlertTriangle, FiArrowLeft, FiArrowRight } from "react-icons/fi";
 
-// Schema validation for sign up
-const signupSchema = z
-  .object({
-    name: z
-      .string()
-      .min(2, "Name must be at least 2 characters")
-      .max(50, "Name is too long"),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Please enter a valid email address"),
-    password: z
-      .string()
-      .min(6, "Password must be at least 6 characters"),
-    confirmPassword: z
-      .string()
-      .min(1, "Please confirm your password"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+// Schema validation for simplified sign up (Email & Password only)
+const signupSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters"),
+});
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
+
+  // If user already has a valid session cookie, redirect to /dashboard
+  useEffect(() => {
+    let isMounted = true;
+    const verifyAuth = async () => {
+      try {
+        const { isAuthenticated } = await checkAuthUser();
+        if (isAuthenticated && isMounted) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+      }
+    };
+
+    verifyAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   const {
     register,
@@ -42,10 +57,8 @@ const Signup = () => {
   } = useForm({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: "",
       email: "",
       password: "",
-      confirmPassword: "",
     },
   });
 
@@ -54,12 +67,25 @@ const Signup = () => {
     setServerError("");
 
     try {
-      const response = await registerUser(data.name, data.email, data.password);
+      // Auto-derive username from email before '@'
+      const derivedUsername = data.email.split("@")[0] || "coder";
+      const response = await registerUser(derivedUsername, data.email, data.password);
+      
       if (response?.success) {
-        if (response.msg) {
-          localStorage.setItem("user", JSON.stringify(response.msg));
-        }
-        navigate("/dashboard");
+        const userObj = response.msg || {
+          name: derivedUsername,
+          email: data.email,
+          role: "user",
+        };
+        localStorage.setItem("user", JSON.stringify(userObj));
+
+        // Navigate to the Profile Setup page with email and derived username
+        navigate("/profile-setup", {
+          state: {
+            email: data.email,
+            username: derivedUsername,
+          },
+        });
       } else {
         setServerError(response?.msg || "Registration failed. Please try again.");
       }
@@ -71,6 +97,17 @@ const Signup = () => {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="bg-[#020617] min-h-screen flex flex-col items-center justify-center text-slate-300">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-lg shadow-green-500/30 mb-4 animate-pulse">
+          &lt;/&gt;
+        </div>
+        <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#020617] min-h-screen flex flex-col justify-center items-center px-4 py-12 selection:bg-green-500 selection:text-black">
@@ -93,10 +130,10 @@ const Signup = () => {
       <div className="w-full max-w-md bg-[#0f172a] border border-slate-800 rounded-3xl p-8 sm:p-9 shadow-2xl shadow-black/50">
         <div className="mb-7 text-center">
           <h1 className="text-2xl font-black text-white tracking-tight">
-            Create Account
+            Get Started
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
-            Join thousands of developers leveling up their algorithmic skills
+            Step 1 of 2: Create your account credentials
           </p>
         </div>
 
@@ -108,29 +145,6 @@ const Signup = () => {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Full Name */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Full Name
-            </label>
-            <input
-              type="text"
-              placeholder="Alex Chen"
-              {...register("name")}
-              className={`w-full px-4 py-2.5 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
-                errors.name
-                  ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-                  : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
-              }`}
-            />
-            {errors.name && (
-              <p className="text-rose-400 text-xs mt-1 font-medium flex items-center gap-1">
-                <span>•</span>
-                <span>{errors.name.message}</span>
-              </p>
-            )}
-          </div>
-
           {/* Email Field */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
@@ -188,29 +202,6 @@ const Signup = () => {
             )}
           </div>
 
-          {/* Confirm Password Field */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Confirm Password
-            </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              {...register("confirmPassword")}
-              className={`w-full px-4 py-2.5 bg-[#020617] text-white text-sm border rounded-xl placeholder-slate-500 focus:outline-none transition ${
-                errors.confirmPassword
-                  ? "border-rose-500/70 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-                  : "border-slate-700/80 focus:border-green-400 focus:ring-1 focus:ring-green-400"
-              }`}
-            />
-            {errors.confirmPassword && (
-              <p className="text-rose-400 text-xs mt-1 font-medium flex items-center gap-1">
-                <span>•</span>
-                <span>{errors.confirmPassword.message}</span>
-              </p>
-            )}
-          </div>
-
           {/* Submit Button */}
           <button
             type="submit"
@@ -223,7 +214,10 @@ const Signup = () => {
                 <span>Creating account...</span>
               </>
             ) : (
-              <span>Create Account</span>
+              <>
+                <span>Continue to Profile Setup</span>
+                <FiArrowRight className="w-4 h-4" />
+              </>
             )}
           </button>
         </form>

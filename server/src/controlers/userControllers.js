@@ -2,6 +2,7 @@ const userData = require("../model/userData")
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const jwt = require('jsonwebtoken');
+const { userDetails } = require("../model/userDetails");
 // const cookie = require('cookie-parser')
 const login = async (req, res) => {
     try {
@@ -71,8 +72,8 @@ const login = async (req, res) => {
 }
 const registration = async (req, res) => {
     try {
-        let { name, email, password } = req.body
-        if (!name || !email || !password) {
+        let { email, password } = req.body
+        if (!email || !password) {
             return res.status(400).json({
                 success: false,
                 msg: "Please provide all required information."
@@ -98,7 +99,6 @@ const registration = async (req, res) => {
         //now save this data to the datbase ok 
 
         const result = await userData.create({
-            name: name.trim(),
             email: email,
             password,
             role
@@ -153,7 +153,6 @@ const logout = (req, res) => {
 
 }
 
-
 const forgetPassword = (req, res) => {
     try {
 
@@ -162,4 +161,67 @@ const forgetPassword = (req, res) => {
     }
 }
 
-module.exports = { login, registration, logout, forgetPassword }
+const me = (req, res) => {
+    res.status(200).json({
+        sucess: true,
+        msg: "login done "
+    })
+}
+
+
+const UserDetails = async (req, res) => {
+    try {
+        const { username, name, role, location, website, github, linkedin } = req.body;
+        const id = req.user;
+        console.log(req.user)
+        const CreateUserDetails = await userDetails.create({
+            userId: id,
+            username,
+            name,
+            role,
+            location,
+            website,
+            github,
+            linkedin
+        })
+        res.status(200).json({
+            sucess: true,
+            CreateUserDetails
+        })
+
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            msg: `error from registration ${error.message}`
+        })
+    }
+}
+
+
+const getUniqueUsername = async (req, res) => {
+
+    try {
+        const { username } = req.body
+        console.log(username)
+        const exits = await userDetails.findOne({ username })
+        if (exits) {
+            res.status(400).json({
+                success: false,
+                msg: `this user name is alredy register `
+            })
+        }
+        res.status(200).json({
+            success: true,
+            msg: `you can use this username`
+        })
+
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            msg: `error from registration ${error.message}`
+        })
+    }
+
+}
+
+module.exports = { login, registration, logout, forgetPassword, me, UserDetails, getUniqueUsername }

@@ -1,19 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { logoutUser } from "../services/api";
 
 const Logout = () => {
   const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
-    // Clear any stored authentication tokens or session details
-    try {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      sessionStorage.clear();
-    } catch {
-      // ignore
-    }
-    setCleared(true);
+    const performLogout = async () => {
+      try {
+        await logoutUser();
+      } catch (err) {
+        console.error("Backend logout error:", err);
+      } finally {
+        try {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          sessionStorage.clear();
+        } catch {
+          // ignore
+        }
+        setCleared(true);
+      }
+    };
+
+    performLogout();
   }, []);
 
   return (
