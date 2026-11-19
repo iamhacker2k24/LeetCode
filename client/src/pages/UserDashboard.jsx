@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { logoutUser } from "../services/api";
 import {
   FiCheckCircle,
@@ -226,6 +226,7 @@ function generateHeatmapData() {
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+  const { username: routeUsername } = useParams();
 
   // User state
   const [user, setUser] = useState(null);
@@ -275,14 +276,36 @@ const UserDashboard = () => {
   };
 
   const stats = DUMMY_USER_STATS;
-  const userName = userProfile?.name || user?.name || stats.profile.name;
-  const userUsername = userProfile?.username || user?.username || stats.profile.username;
-  const userEmail = userProfile?.email || user?.email || "dev@codeforge.io";
-  const userRole = userProfile?.role || user?.role || stats.profile.role;
-  const userLocation = userProfile?.location || stats.profile.location;
-  const userWebsite = userProfile?.website || stats.profile.website;
-  const userGithub = userProfile?.github || stats.profile.github;
-  const userLinkedin = userProfile?.linkedin || stats.profile.linkedin;
+
+  // Active Username resolution
+  const sessionUsername =
+    userProfile?.username ||
+    user?.username ||
+    (user?.email ? user.email.split("@")[0] : null) ||
+    stats.profile.username;
+
+  // Priority to URL param, fallback to current logged in user
+  const activeUsername = routeUsername || sessionUsername;
+
+  // Redirect /profile to /profile/{username}
+  useEffect(() => {
+    if (!routeUsername && activeUsername) {
+      navigate(`/profile/${encodeURIComponent(activeUsername)}`, { replace: true });
+    }
+  }, [routeUsername, activeUsername, navigate]);
+
+  // Is this the currently logged-in user's own profile?
+  const isOwnProfile = !routeUsername || routeUsername.toLowerCase() === sessionUsername.toLowerCase();
+
+  const userName = isOwnProfile
+    ? (userProfile?.name || user?.name || stats.profile.name)
+    : (activeUsername.charAt(0).toUpperCase() + activeUsername.slice(1));
+  const userEmail = isOwnProfile ? (userProfile?.email || user?.email || "dev@codeforge.io") : `${activeUsername}@codeforge.io`;
+  const userRole = isOwnProfile ? (userProfile?.role || user?.role || stats.profile.role) : stats.profile.role;
+  const userLocation = isOwnProfile ? (userProfile?.location || stats.profile.location) : stats.profile.location;
+  const userWebsite = isOwnProfile ? (userProfile?.website || stats.profile.website) : `https://github.com/${activeUsername}`;
+  const userGithub = isOwnProfile ? (userProfile?.github || stats.profile.github) : `https://github.com/${activeUsername}`;
+  const userLinkedin = isOwnProfile ? (userProfile?.linkedin || stats.profile.linkedin) : stats.profile.linkedin;
 
   // Solved Percentages
   const easyPct = Math.min(100, Math.round((stats.solvedStats.easy.solved / stats.solvedStats.easy.total) * 100));
@@ -412,7 +435,7 @@ const UserDashboard = () => {
                 <div className="flex-1 min-w-0">
                   <h1 className="text-xl font-black text-white truncate">{userName}</h1>
                   <p className="text-xs font-mono text-slate-400 mt-0.5 truncate">
-                    @{userUsername}
+                    @{activeUsername}
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-[11px] font-semibold uppercase tracking-wider">
@@ -427,13 +450,15 @@ const UserDashboard = () => {
               </div>
 
               {/* Action: Edit Profile */}
-              <Link
-                to="/profile-setup"
-                className="w-full mt-5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition border border-slate-700/60"
-              >
-                <FiEdit3 className="w-3.5 h-3.5 text-slate-400" />
-                <span>Edit Profile</span>
-              </Link>
+              {isOwnProfile && (
+                <Link
+                  to="/profile-setup"
+                  className="w-full mt-5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition border border-slate-700/60"
+                >
+                  <FiEdit3 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Edit Profile</span>
+                </Link>
+              )}
 
               {/* User Bio & Meta */}
               <div className="mt-6 pt-5 border-t border-slate-800/80 space-y-2.5 text-xs text-slate-400">

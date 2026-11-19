@@ -619,7 +619,12 @@ const ProblemPage = () => {
 
                 <div className="py-1">
                   <Link
-                    to="/profile"
+                    to={`/profile/${encodeURIComponent(
+                      user?.username ||
+                        (user?.email ? user.email.split("@")[0] : null) ||
+                        user?.name ||
+                        "dev_coder5"
+                    )}`}
                     onClick={() => setShowProfileMenu(false)}
                     className="flex items-center gap-2.5 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition"
                   >

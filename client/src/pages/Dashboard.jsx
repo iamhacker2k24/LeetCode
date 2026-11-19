@@ -221,6 +221,12 @@ const Dashboard = () => {
   const isCurrentMonth =
     today.getFullYear() === year && today.getMonth() === month;
 
+  const currentUsername =
+    user?.username ||
+    (user?.email ? user.email.split("@")[0] : null) ||
+    user?.name ||
+    "dev_coder5";
+
   return (
     <div className="bg-[#020617] min-h-screen text-slate-100 font-sans selection:bg-green-500 selection:text-black">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
@@ -244,7 +250,7 @@ const Dashboard = () => {
                 Problems
               </span>
               <Link
-                to="/profile"
+                to={`/profile/${encodeURIComponent(currentUsername)}`}
                 className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
               >
                 User Dashboard
@@ -286,7 +292,7 @@ const Dashboard = () => {
 
             {/* User Avatar & Name */}
             <Link
-              to="/profile"
+              to={`/profile/${encodeURIComponent(currentUsername)}`}
               className="flex items-center gap-2 pl-2 hover:opacity-85 transition group"
               title="View User Dashboard"
             >

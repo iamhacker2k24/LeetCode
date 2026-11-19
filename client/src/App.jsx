@@ -20,9 +20,10 @@ function App() {
       <Route path="/setup-profile" element={<ProfileSetup />} />
       <Route path="/logout" element={<Logout />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/profile" element={<UserDashboard />} />
+      <Route path="/profile/:username" element={<UserDashboard />} />
       <Route path="/user-dashboard" element={<UserDashboard />} />
       <Route path="/user/dashboard" element={<UserDashboard />} />
-      <Route path="/profile" element={<UserDashboard />} />
       <Route path="/problem/:id" element={<ProblemPage />} />
       <Route path="/problems/:id" element={<ProblemPage />} />
     </Routes>
