@@ -224,4 +224,23 @@ const getUniqueUsername = async (req, res) => {
 
 }
 
-module.exports = { login, registration, logout, forgetPassword, me, UserDetails, getUniqueUsername }
+
+const userStats = async () => {
+    try {
+        // const username
+        const data = await userDetails.findById(id)
+        res.status(200).json({
+            sucess: true,
+            msg: data
+        })
+
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            msg: `error from registration ${error.message}`
+        })
+    }
+
+}
+
+module.exports = { login, registration, logout, forgetPassword, me, UserDetails, getUniqueUsername, userStats }

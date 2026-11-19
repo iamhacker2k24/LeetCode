@@ -236,3 +236,59 @@ export async function runQuestion(id, { code, language, timeTaken }) {
 
   return data;
 }
+
+export async function createUserDetails(profileData) {
+  const url = API_ENDPOINTS.CREATE_USER_DETAILS;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(profileData),
+  });
+
+  const data = await response.json().catch(() => null);
+  const isSuccess = data?.sucess === true || data?.success === true;
+
+  if (!response.ok || !isSuccess) {
+    const errorMsg =
+      (typeof data?.msg === "string" ? data.msg : null) ||
+      data?.message ||
+      data?.error ||
+      "Failed to save profile details.";
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
+export async function checkUniqueUsername(username) {
+  const url = API_ENDPOINTS.CHECK_UNIQUE_USERNAME;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ username }),
+    });
+
+    const data = await response.json().catch(() => null);
+    const isSuccess = data?.sucess === true || data?.success === true;
+
+    return {
+      isAvailable: response.ok && isSuccess,
+      msg:
+        (typeof data?.msg === "string" ? data.msg : null) ||
+        data?.message ||
+        (isSuccess ? "you can use this username" : "Username is already taken"),
+    };
+  } catch (err) {
+    return {
+      isAvailable: false,
+      msg: err.message || "Error checking username",
+    };
+  }
+}
