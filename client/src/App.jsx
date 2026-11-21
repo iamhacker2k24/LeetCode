@@ -7,6 +7,7 @@ import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
 import UserDashboard from "./pages/UserDashboard";
 import ProblemPage from "./pages/ProblemPage";
+import AdminPage from "./pages/AdminPage";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <Route path="/setup-profile" element={<ProfileSetup />} />
       <Route path="/logout" element={<Logout />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="/profile" element={<UserDashboard />} />
       <Route path="/profile/:username" element={<UserDashboard />} />
       <Route path="/user-dashboard" element={<UserDashboard />} />
