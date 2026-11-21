@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const jwt = require('jsonwebtoken');
 const { userDetails } = require("../model/userDetails");
+const { solvedMap, solvedmap } = require("../model/solvedMap");
 // const cookie = require('cookie-parser')
 const login = async (req, res) => {
     try {
@@ -225,10 +226,16 @@ const getUniqueUsername = async (req, res) => {
 }
 
 
-const userStats = async () => {
+const userStats = async (req, res) => {
     try {
         // const username
         const data = await userDetails.findById(id)
+        if (!data) {
+            res.status(false).json({
+                sucess: false,
+                msg: "sorry not data found "
+            })
+        }
         res.status(200).json({
             sucess: true,
             msg: data
@@ -243,4 +250,30 @@ const userStats = async () => {
 
 }
 
-module.exports = { login, registration, logout, forgetPassword, me, UserDetails, getUniqueUsername, userStats }
+const SolvedMap = async (req, res) => {
+    try {
+
+        const data = await solvedmap.create(req.body)
+        // if (!data) {
+        //     res.status(false).json({
+        //         sucess: false,
+        //         msg: "sorry not data found "
+        //     })
+        // }
+
+        res.status(200).json({
+            sucess: true,
+            msg: data
+        })
+
+    } catch (error) {
+        console.log(error.message)
+        res.status(400).json({
+            success: false,
+            msg: `error from registration ${error.message}`
+        })
+    }
+
+}
+
+module.exports = { login, registration, logout, forgetPassword, me, UserDetails, getUniqueUsername, userStats, SolvedMap }
