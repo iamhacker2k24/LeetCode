@@ -240,7 +240,6 @@ const UserDashboard = () => {
   });
   const [submissionTab, setSubmissionTab] = useState("all");
   const [hoveredDay, setHoveredDay] = useState(null);
-  const [hoveredContest, setHoveredContest] = useState(null);
 
   // Load user
   useEffect(() => {
@@ -365,18 +364,6 @@ const UserDashboard = () => {
               <span className="px-3 py-1.5 rounded-lg text-white font-semibold bg-slate-800/80">
                 User Dashboard
               </span>
-              <a
-                href="#contests"
-                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
-              >
-                Contests
-              </a>
-              <a
-                href="#discuss"
-                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
-              >
-                Discuss
-              </a>
             </nav>
           </div>
 
@@ -859,97 +846,7 @@ const UserDashboard = () => {
             </div>
 
             {/* ─────────────────────────────────────────────────────────────
-                SECTION 3: CONTEST RATING PROGRESSION GRAPH
-               ───────────────────────────────────────────────────────────── */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-2">
-                <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-2">
-                    <FiTrendingUp className="w-5 h-5 text-amber-400" />
-                    <span>Contest Rating History</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Current Rating: <strong className="text-amber-400 font-bold">{stats.contestStats.rating}</strong> (Guardian Tier, Top {stats.contestStats.topPercentage}%)
-                  </p>
-                </div>
-                <div className="text-xs font-mono text-slate-400">
-                  {stats.contestStats.attendedContests} Contests Attended
-                </div>
-              </div>
-
-              {/* Interactive SVG Rating Line Graph */}
-              <div className="mt-6">
-                <div className="h-44 w-full relative">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 600 140" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="ratingGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Area fill */}
-                    <path
-                      d="M 20 120 L 20 90 L 80 80 L 140 85 L 200 65 L 260 52 L 320 42 L 380 48 L 440 32 L 500 20 L 560 12 L 560 120 Z"
-                      fill="url(#ratingGrad)"
-                    />
-
-                    {/* Smooth Line */}
-                    <path
-                      d="M 20 90 L 80 80 L 140 85 L 200 65 L 260 52 L 320 42 L 380 48 L 440 32 L 500 20 L 560 12"
-                      fill="none"
-                      stroke="#f59e0b"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Data Points */}
-                    {[
-                      { x: 20, y: 90, c: stats.contestStats.ratingHistory[0] },
-                      { x: 80, y: 80, c: stats.contestStats.ratingHistory[1] },
-                      { x: 140, y: 85, c: stats.contestStats.ratingHistory[2] },
-                      { x: 200, y: 65, c: stats.contestStats.ratingHistory[3] },
-                      { x: 260, y: 52, c: stats.contestStats.ratingHistory[4] },
-                      { x: 320, y: 42, c: stats.contestStats.ratingHistory[5] },
-                      { x: 380, y: 48, c: stats.contestStats.ratingHistory[6] },
-                      { x: 440, y: 32, c: stats.contestStats.ratingHistory[7] },
-                      { x: 500, y: 20, c: stats.contestStats.ratingHistory[8] },
-                      { x: 560, y: 12, c: stats.contestStats.ratingHistory[9] },
-                    ].map((pt, i) => (
-                      <circle
-                        key={i}
-                        cx={pt.x}
-                        cy={pt.y}
-                        r="5"
-                        fill="#020617"
-                        stroke="#f59e0b"
-                        strokeWidth="3"
-                        className="cursor-pointer hover:r-7 transition-all"
-                        onMouseEnter={() => setHoveredContest(pt.c)}
-                        onMouseLeave={() => setHoveredContest(null)}
-                      />
-                    ))}
-                  </svg>
-                </div>
-
-                {/* Contest Tooltip / Info */}
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-4 pt-3 border-t border-slate-800">
-                  <span className="font-mono">
-                    {hoveredContest ? (
-                      <span className="text-amber-400 font-bold">
-                        {hoveredContest.contest} &bull; Rating: {hoveredContest.rating}
-                      </span>
-                    ) : (
-                      "Hover over points on the curve to inspect contest ratings"
-                    )}
-                  </span>
-                  <span className="text-[11px] text-slate-500">Global Ranking: #{stats.contestStats.globalRank}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* ─────────────────────────────────────────────────────────────
-                SECTION 4: RECENT SUBMISSIONS LIST
+                SECTION 3: RECENT SUBMISSIONS LIST
                ───────────────────────────────────────────────────────────── */}
             <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-3">

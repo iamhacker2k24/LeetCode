@@ -398,12 +398,6 @@ const HomePage = () => {
                 Study Plans
               </a>
               <a
-                href="#contests"
-                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
-              >
-                Contests
-              </a>
-              <a
                 href="#features"
                 className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
               >
@@ -442,7 +436,7 @@ const HomePage = () => {
             <div className="lg:col-span-7 flex flex-col gap-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-medium w-fit">
                 <span className="flex h-2 w-2 rounded-full bg-green-400 animate-ping" />
-                <span>Weekly Coding Contest 392 is now Live</span>
+                <span>Over 3,000+ Algorithmic Practice Problems Available</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
@@ -1053,11 +1047,11 @@ const HomePage = () => {
               <FiAward className="w-5 h-5 text-amber-400" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">
-              Weekly Competitive Contests
+              Automated Code Evaluation
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Simulate high-pressure technical screen rounds with timed global contests,
-              ELO rating updates, and live international leaderboards.
+              Run your solutions against verified test cases with real-time runtime,
+              memory metrics, and instant verdict analysis.
             </p>
           </div>
         </div>

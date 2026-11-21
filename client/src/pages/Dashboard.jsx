@@ -255,24 +255,6 @@ const Dashboard = () => {
               >
                 User Dashboard
               </Link>
-              <a
-                href="#contests"
-                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
-              >
-                Contests
-              </a>
-              <a
-                href="#discuss"
-                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
-              >
-                Discuss
-              </a>
-              <a
-                href="#interview"
-                className="px-3 py-1.5 rounded-lg hover:text-white hover:bg-slate-800/60 transition"
-              >
-                Interview
-              </a>
             </nav>
           </div>
 
@@ -794,25 +776,6 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Upcoming Contest Card */}
-            <div className="bg-gradient-to-br from-slate-900 to-[#0f172a] border border-slate-800 rounded-2xl p-5 shadow-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <FiAward className="text-yellow-400 w-4 h-4" />
-                <span className="text-xs uppercase font-extrabold tracking-wider text-green-400">
-                  Weekly Contest 392
-                </span>
-              </div>
-              <h4 className="text-sm font-bold text-white">
-                Global Ranking Challenge
-              </h4>
-              <p className="text-xs text-slate-400 mt-1">
-                Starts Sunday 8:00 AM. 4 Problems, 90 Minutes.
-              </p>
-              <button className="w-full mt-4 py-2 bg-green-500 hover:bg-green-400 text-black font-bold text-xs rounded-xl transition shadow-md shadow-green-500/20">
-                Register for Contest
-              </button>
             </div>
           </aside>
         </div>
