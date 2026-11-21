@@ -16,11 +16,11 @@ const Submission = new Schema.create({
         type: String,
         require: true
     },
-    date: {
-        type: Date
-    },
     language: {
         type: String
+    },
+    date: {
+        type: Date.now()
     }
 
 

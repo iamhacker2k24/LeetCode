@@ -7,26 +7,37 @@ authRouter.post("/login", login)
 
 authRouter.post("/registration", registration)
 
-
-
-// /me.
-authRouter.get("/me", userMiddleWare, me)
-
+authRouter.get("/me", userMiddleWare, me) //me check user login or not 
 
 // now lets implemts logout functions
-
 authRouter.get("/logout", userMiddleWare, logout)
 
 //forget Password i will do this later ok 
-
 authRouter.post("/forgetpassword", userMiddleWare, forgetPassword)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 authRouter.post("/userdetails", userMiddleWare, UserDetails)
-
-
 //this router will give details of user budge ttal solve question and language solved all 
 authRouter.post("/solvedmap", SolvedMap)
-
-
 //this 
 authRouter.post("/getuniqueusername", userMiddleWare, getUniqueUsername)
 authRouter.post("/userstats", userStats) // this will works on base on username ok

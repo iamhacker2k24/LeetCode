@@ -40,6 +40,6 @@ const SolvedMap = new Schema({
 
 
 })
-const solvedmap = mongoose.model("submission", SolvedMap)
+const solvedmap = mongoose.model("SolvedMap", SolvedMap)
 
 module.exports = { solvedmap }

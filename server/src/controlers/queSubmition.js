@@ -1,3 +1,4 @@
+const { solvedmap } = require("../model/solvedMap");
 const testCase = require("../model/testCase");
 const RunCompiler = require("../runCode/onlinecompiler");
 
@@ -21,7 +22,12 @@ const runQues = async (req, res) => {   //this is  with default test case
         // console.log(data)
 
         //here need to implement user meed to store user dataproperly ok 
-
+        if (!data.verdict == "accepted") {
+            return res.status(400).json({
+                sucess: false,
+                msg: data.summary
+            })
+        }
         return res.status(200).json({
             sucess: true,
             data: {
@@ -39,7 +45,7 @@ const runQues = async (req, res) => {   //this is  with default test case
         console.log("error from questionSubmition")
         console.log(error.message)
         return res.status(400).json({
-            sucess: true,
+            sucess: false,
             msg: "error from Question submition "
         })
 
@@ -59,8 +65,59 @@ const runQuesWithTestCase = (req, res) => { // this works with coustom tets case
 
     }
 }
-const subMitques = (req, res) => {  //this will submit question with checking test case again ok 
+
+
+const subMitques = async (req, res) => {  //this will submit question with checking test case again ok 
     try {
+        const { id } = req.params;
+        const { code, language, timeTaken } = req.body
+        // console.log(req.body, id)
+        if (!code || !language || !timeTaken) {
+            return res.status(400).json({
+                sucess: false,
+                msg: "pls fill all value "
+            })
+        }
+        // console.log(req.body)
+        const testCaseData = await testCase.find({ questionId: id }).select("input expectedOutput -_id")
+
+        const data = await RunCompiler(code, testCaseData, language);
+
+        // console.log(data)
+
+        //here need to implement user meed to store user dataproperly ok 
+        if (!data.verdict == "accepted") {
+            return res.status(400).json({
+                sucess: false,
+                msg: data.summary
+            })
+        }
+        await submission.create({
+            userId: id,
+            solution: code,
+            language: language,
+            date: date.now(),
+
+        })
+        solvedmap.findOneAndUpdate({ userId: id }, {
+            languageSolve: language,
+            TopicSolved
+        })
+
+
+        return res.status(200).json({
+            sucess: true,
+            data: {
+                verdict: data.verdict,
+                score: data.score,
+                passed: data.passed,
+                total: data.total,
+                memory_limit: data.memory_limit,
+                summary: data.summary,
+                tests: data.tests
+            }
+        })
+
 
     } catch (error) {
         console.log("error from questionSubmition")
