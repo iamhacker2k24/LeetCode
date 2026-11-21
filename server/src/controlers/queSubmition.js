@@ -1,4 +1,6 @@
+const Question = require("../model/createQues");
 const { solvedmap } = require("../model/solvedMap");
+const { submission } = require("../model/Submission");
 const testCase = require("../model/testCase");
 const RunCompiler = require("../runCode/onlinecompiler");
 
@@ -70,6 +72,9 @@ const runQuesWithTestCase = (req, res) => { // this works with coustom tets case
 const subMitques = async (req, res) => {  //this will submit question with checking test case again ok 
     try {
         const { id } = req.params;
+        const userId = req.user
+
+        console.log(userId)
         const { code, language, timeTaken } = req.body
         // console.log(req.body, id)
         if (!code || !language || !timeTaken) {
@@ -86,23 +91,38 @@ const subMitques = async (req, res) => {  //this will submit question with check
         // console.log(data)
 
         //here need to implement user meed to store user dataproperly ok 
-        if (!data.verdict == "accepted") {
+        if (data.verdict !== "accepted") {
             return res.status(400).json({
                 sucess: false,
                 msg: data.summary
             })
         }
         await submission.create({
-            userId: id,
+            userId: userId,
             solution: code,
-            language: language,
-            date: date.now(),
+            language: language
 
         })
-        solvedmap.findOneAndUpdate({ userId: id }, {
-            languageSolve: language,
-            TopicSolved
+        const quesData = await Question.findOne({
+            questionId: id
         })
+
+        const topics = ["Array", "Hash_Table"];
+        const update = {
+            $inc: {
+                totalSubmissions: 1,
+                acceptedSolutions: 1,
+                [`languageSolve.${language}`]: 1,
+                ...Object.fromEntries(
+                    topics.map(topic => [`TopicSolved.${topic}`, 1])
+                )
+            }
+        };
+        await solvedmap.findOneAndUpdate(
+            { userId },
+            update,
+            { new: true, upsert: true }
+        );
 
 
         return res.status(200).json({

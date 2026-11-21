@@ -20,10 +20,13 @@ const Submission = new Schema.create({
         type: String
     },
     date: {
-        type: Date.now()
+        type: Date,
+        default: Date.now
     }
 
 
 
 })
 const submission = mongoose.model("submission", Submission)
+
+module.exports = { submission }
