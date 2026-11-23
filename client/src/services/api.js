@@ -100,7 +100,7 @@ export async function checkAuthUser() {
     });
 
     const data = await response.json().catch(() => null);
-    const isSuccess = data?.sucess === true || data?.success === true;
+    const isSuccess = data?.success === true || data?.success === true;
 
     return {
       isAuthenticated: response.ok && isSuccess,
@@ -222,8 +222,8 @@ export async function runQuestion(id, { code, language, timeTaken }) {
 
   const data = await response.json().catch(() => null);
 
-  // Notice backend might return { "sucess": true } or { "success": true }
-  const isSuccess = data?.sucess === true || data?.success === true;
+  // Notice backend might return { "success": true } or { "success": true }
+  const isSuccess = data?.success === true || data?.success === true;
 
   if (!response.ok || !isSuccess) {
     const errorMsg =
@@ -249,7 +249,7 @@ export async function createUserDetails(profileData) {
   });
 
   const data = await response.json().catch(() => null);
-  const isSuccess = data?.sucess === true || data?.success === true;
+  const isSuccess = data?.success === true || data?.success === true;
 
   if (!response.ok || !isSuccess) {
     const errorMsg =
@@ -276,7 +276,7 @@ export async function checkUniqueUsername(username) {
     });
 
     const data = await response.json().catch(() => null);
-    const isSuccess = data?.sucess === true || data?.success === true;
+    const isSuccess = data?.success === true || data?.success === true;
 
     return {
       isAvailable: response.ok && isSuccess,

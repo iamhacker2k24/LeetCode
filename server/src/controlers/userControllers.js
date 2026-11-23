@@ -19,7 +19,7 @@ const login = async (req, res) => {
 
         if (!exists) {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: "not  exists your account pls registered first "
 
             })
@@ -31,7 +31,7 @@ const login = async (req, res) => {
         console.log(match)
         if (!match) {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: "wrong email or password"
 
             })
@@ -86,7 +86,7 @@ const registration = async (req, res) => {
 
         if (exists) {
             return res.status(409).json({
-                sucess: true,
+                success: true,
                 msg: "alreday exists your mail"
 
             })
@@ -164,7 +164,7 @@ const forgetPassword = (req, res) => {
 
 const me = (req, res) => {
     res.status(200).json({
-        sucess: true,
+        success: true,
         msg: "login done "
     })
 }
@@ -186,7 +186,7 @@ const UserDetails = async (req, res) => {
             linkedin
         })
         res.status(200).json({
-            sucess: true,
+            success: true,
             CreateUserDetails
         })
 
@@ -229,15 +229,16 @@ const getUniqueUsername = async (req, res) => {
 const userStats = async (req, res) => {
     try {
         // const username
+
         const data = await userDetails.findById(id)
         if (!data) {
             res.status(false).json({
-                sucess: false,
+                success: false,
                 msg: "sorry not data found "
             })
         }
         res.status(200).json({
-            sucess: true,
+            success: true,
             msg: data
         })
 
@@ -256,13 +257,13 @@ const SolvedMap = async (req, res) => {
         const data = await solvedmap.create(req.body)
         // if (!data) {
         //     res.status(false).json({
-        //         sucess: false,
+        //         success: false,
         //         msg: "sorry not data found "
         //     })
         // }
 
         res.status(200).json({
-            sucess: true,
+            success: true,
             msg: data
         })
 

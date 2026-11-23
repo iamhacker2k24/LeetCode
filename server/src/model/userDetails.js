@@ -74,6 +74,18 @@ const UserDetails = new Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+    likeQuestion: {
+        type: Array
+    },
+    dislikeQustion: {
+        type: Array
+    }
+    , starQues: {
+        type: Array
+    },
+    solvedQuestions: {
+        type: Array
     }
 
 }, { timestamps: true });

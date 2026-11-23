@@ -218,7 +218,7 @@ const CreateTestCse = async (req, res) => {
         await testCase.create(req.body)
         return res.status(200).json({
             success: true,
-            message: " created propery  sucessfully"
+            message: " created propery  successfully"
         });
 
     } catch (error) {
@@ -282,7 +282,7 @@ const getTestCaseByid = async (req, res) => {
 
 const createCodeTemplate = (req, res) => {
     try {
-        const { id } = req.parms;
+        const { id } = req.params;
 
 
     } catch (error) {

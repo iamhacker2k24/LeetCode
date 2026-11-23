@@ -3,7 +3,7 @@ const createAdmin = () => {
         const { name, email, password } = req.body
         if (name == "" || email == "" || password == "") {
             res.status(200).json({
-                sucess: true,
+                success: true,
                 msg: "pls add all info first "
             })
         }
@@ -12,13 +12,13 @@ const createAdmin = () => {
 
         //
         res.status(200).json({
-            sucess: true,
+            success: true,
 
         })
 
     } catch (error) {
         res.status(200).json({
-            sucess: true,
+            success: true,
             msg: `error from createAdmin ${error.messsage}`
         })
     }
@@ -32,7 +32,7 @@ const dismissAdmin = () => {
         const { name, email, password } = req.body
         if (name == "" || email == "" || password == "") {
             res.status(200).json({
-                sucess: true,
+                success: true,
                 msg: "pls add all info first "
             })
         }
@@ -41,13 +41,13 @@ const dismissAdmin = () => {
 
         //
         res.status(200).json({
-            sucess: true,
+            success: true,
 
         })
 
     } catch (error) {
         res.status(200).json({
-            sucess: true,
+            success: true,
             msg: `error from createAdmin ${error.messsage}`
         })
     }

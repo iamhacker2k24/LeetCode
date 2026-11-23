@@ -12,14 +12,14 @@ const adminMiddleWare = async (req, res, next) => {
         const { id } = payload;
         if (!id) {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: "error from token"
             })
         }
         const findUser = await userData.findById(id)
         if (!findUser) {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: "error from token"
             })
         }

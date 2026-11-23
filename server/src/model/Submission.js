@@ -7,14 +7,14 @@ const mongoose = require("mongoose")
 
 const { Schema } = mongoose;
 
-const Submission = new Schema.create({
+const Submission = new Schema({
     userId: {
         type: String,
-        require: true
+        required: true
     },
     solution: {
         type: String,
-        require: true
+        required: true
     },
     language: {
         type: String
@@ -23,8 +23,6 @@ const Submission = new Schema.create({
         type: Date,
         default: Date.now
     }
-
-
 
 })
 const submission = mongoose.model("submission", Submission)

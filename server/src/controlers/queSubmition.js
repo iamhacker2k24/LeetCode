@@ -12,7 +12,7 @@ const runQues = async (req, res) => {   //this is  with default test case
         // console.log(req.body, id)
         if (!code || !language || !timeTaken) {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: "pls fill all value "
             })
         }
@@ -24,14 +24,14 @@ const runQues = async (req, res) => {   //this is  with default test case
         // console.log(data)
 
         //here need to implement user meed to store user dataproperly ok 
-        if (!data.verdict == "accepted") {
+        if (data.verdict !== "accepted") {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: data.summary
             })
         }
         return res.status(200).json({
-            sucess: true,
+            success: true,
             data: {
                 verdict: data.verdict,
                 score: data.score,
@@ -47,7 +47,7 @@ const runQues = async (req, res) => {   //this is  with default test case
         console.log("error from questionSubmition")
         console.log(error.message)
         return res.status(400).json({
-            sucess: false,
+            success: false,
             msg: "error from Question submition "
         })
 
@@ -60,8 +60,8 @@ const runQuesWithTestCase = (req, res) => { // this works with coustom tets case
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
-        return resizeBy.status(400).josn({
-            sucess: true,
+        return res.status(400).json({
+            success: true,
             msg: "error from Question submition "
         })
 
@@ -79,7 +79,7 @@ const subMitques = async (req, res) => {  //this will submit question with check
         // console.log(req.body, id)
         if (!code || !language || !timeTaken) {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: "pls fill all value "
             })
         }
@@ -93,7 +93,7 @@ const subMitques = async (req, res) => {  //this will submit question with check
         //here need to implement user meed to store user dataproperly ok 
         if (data.verdict !== "accepted") {
             return res.status(400).json({
-                sucess: false,
+                success: false,
                 msg: data.summary
             })
         }
@@ -126,7 +126,7 @@ const subMitques = async (req, res) => {  //this will submit question with check
 
 
         return res.status(200).json({
-            sucess: true,
+            success: true,
             data: {
                 verdict: data.verdict,
                 score: data.score,
@@ -142,8 +142,8 @@ const subMitques = async (req, res) => {  //this will submit question with check
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
-        return resizeBy.status(400).josn({
-            sucess: true,
+        return res.status(400).json({
+            success: true,
             msg: "error from Question submition "
         })
 
@@ -156,8 +156,8 @@ const likeQues = (req, res) => { // by usong this user can like or dis like ques
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
-        return resizeBy.status(400).josn({
-            sucess: true,
+        return res.status(400).json({
+            success: true,
             msg: "error from Question submition "
         })
 
@@ -167,12 +167,18 @@ const likeQues = (req, res) => { // by usong this user can like or dis like ques
 
 const isStar = (req, res) => { //by usong this user can star question 
     try {
+        const id = req.user;
+        const quesStartId = req.body.params;
+        console.log(quesStartId)
+        console.log(id)
+
+
 
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
-        return resizeBy.status(400).josn({
-            sucess: true,
+        return resizeBy.status(400).json({
+            success: true,
             msg: "error from Question submition "
         })
     }
@@ -184,8 +190,8 @@ const Markquestion = (req, res) => {   //this will help to mark question
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
-        return resizeBy.status(400).josn({
-            sucess: true,
+        return res.status(400).json({
+            success: true,
             msg: "error from Question submition "
         })
     }
