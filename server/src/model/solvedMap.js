@@ -1,12 +1,11 @@
 
-const mongoose = require("mongoose")
-
+const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const SolvedMap = new Schema({
     userId: {
         type: String,
-        require: true,
+        required: true,
         unique: true
     },
     languageSolve: {
@@ -20,26 +19,33 @@ const SolvedMap = new Schema({
         default: {}
     },
     easySolved: {
-        type: Number
+        type: Number,
+        default: 0
     },
     Medium: {
-        type: Number
+        type: Number,
+        default: 0
     },
     Hard: {
-        type: Number
+        type: Number,
+        default: 0
     },
     totalSubmissions: {
-        type: Number
+        type: Number,
+        default: 0
     },
     acceptedSolutions: {
-        type: Number
+        type: Number,
+        default: 0
     },
     currentStreak: {
-        type: Number
+        type: Number,
+        default: 0
     }
+}, {
+    timestamps: true
+});
 
+const solvedmap = mongoose.model("SolvedMap", SolvedMap);
 
-})
-const solvedmap = mongoose.model("SolvedMap", SolvedMap)
-
-module.exports = { solvedmap }
+module.exports = { solvedmap };
