@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
-import { getAllQuestions, logoutUser } from "../services/api";
+import { getAllQuestions, logoutUser, checkAuthUser } from "../services/api";
 import {
   FiShield,
   FiDatabase,
@@ -141,6 +141,10 @@ const DEMO_USERS = [
 const AdminPage = () => {
   const navigate = useNavigate();
 
+  // Authentication State
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+
   // Active Tab: "questions" | "create" | "users" | "system"
   const [activeTab, setActiveTab] = useState("questions");
 
@@ -159,6 +163,43 @@ const AdminPage = () => {
       setToast({ show: false, message: "", type: "success" });
     }, 2800);
   };
+
+  // Auth verification with /api/user/me (same auth mechanism via cookies)
+  useEffect(() => {
+    let isMounted = true;
+    const verifyAdminAuth = async () => {
+      try {
+        const { isAuthenticated } = await checkAuthUser();
+        if (!isAuthenticated) {
+          if (isMounted) {
+            navigate("/login?redirect=/admin", { replace: true });
+          }
+          return;
+        }
+
+        if (isMounted) {
+          let storedUser = null;
+          try {
+            storedUser = JSON.parse(localStorage.getItem("user") || "null");
+          } catch {
+            storedUser = null;
+          }
+          setCurrentUser(storedUser);
+          setIsCheckingAuth(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          navigate("/login?redirect=/admin", { replace: true });
+        }
+      }
+    };
+
+    verifyAdminAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   // Fetch real questions if server is connected
   useEffect(() => {
@@ -274,7 +315,7 @@ const AdminPage = () => {
     showToast("Question deleted from repository.");
   };
 
-  // Logout Handler
+  // Logout Handler - same logout path via /logout
   const handleAdminLogout = async () => {
     try {
       await logoutUser();
@@ -283,9 +324,23 @@ const AdminPage = () => {
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      navigate("/login");
+      navigate("/logout");
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="bg-[#020617] min-h-screen flex flex-col items-center justify-center text-slate-300">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-lg shadow-green-500/30 mb-4 animate-pulse">
+          &lt;/&gt;
+        </div>
+        <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-xs text-slate-400 font-mono tracking-wide">
+          Verifying administrative credentials...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#020617] min-h-screen text-slate-100 font-sans selection:bg-green-500 selection:text-black">
@@ -347,11 +402,15 @@ const AdminPage = () => {
 
             <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
               <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/40 text-green-400 font-black text-xs flex items-center justify-center">
-                A
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "A"}
               </div>
               <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-bold text-white">Super Admin</span>
-                <span className="text-[10px] text-slate-400">admin@codeforge.io</span>
+                <span className="text-xs font-bold text-white">
+                  {currentUser?.name || "Super Admin"}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {currentUser?.email || "admin@codeforge.io"}
+                </span>
               </div>
             </div>
 

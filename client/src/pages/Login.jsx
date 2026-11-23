@@ -24,14 +24,30 @@ const Login = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
 
-  // If user already has a valid session cookie, redirect to /dashboard
+  // If user already has a valid session cookie, redirect appropriately
   useEffect(() => {
     let isMounted = true;
     const verifyAuth = async () => {
       try {
         const { isAuthenticated } = await checkAuthUser();
         if (isAuthenticated && isMounted) {
-          navigate("/dashboard", { replace: true });
+          const params = new URLSearchParams(window.location.search);
+          const redirect = params.get("redirect");
+          let userRole = "";
+          try {
+            const stored = JSON.parse(localStorage.getItem("user") || "{}");
+            userRole = (stored?.role || "").toLowerCase();
+          } catch {
+            // ignore
+          }
+
+          if (redirect) {
+            navigate(redirect, { replace: true });
+          } else if (userRole === "admin") {
+            navigate("/admin", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
           return;
         }
       } catch {
@@ -72,7 +88,17 @@ const Login = () => {
         if (response.msg) {
           localStorage.setItem("user", JSON.stringify(response.msg));
         }
-        navigate("/dashboard");
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get("redirect");
+        const userRole = (response?.msg?.role || "").toLowerCase();
+
+        if (redirect) {
+          navigate(redirect);
+        } else if (userRole === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         setServerError(response?.msg || "Login failed. Please try again.");
       }

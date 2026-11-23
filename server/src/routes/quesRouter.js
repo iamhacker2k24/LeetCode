@@ -1,9 +1,10 @@
 const express = require("express");
+const quesRouter = express.Router();
 const { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug,
     CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate,
     editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid } = require("../controlers/QuesControllers");
 const { userMiddleWare } = require("../middleWare/userMiddleWare");
-const quesRouter = express.Router();
+
 
 quesRouter.post("/createques", createQues) //admin only 
 quesRouter.post("/editques/:id", editQues) //admin only 

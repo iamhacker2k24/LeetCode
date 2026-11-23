@@ -1,6 +1,9 @@
 const express = require("express")
-const { createAdmin, dismissAdmin } = require("../controlers/createAdmin")
 const adminRouter = express.Router()
+const { createAdmin, dismissAdmin } = require("../controlers/createAdmin")
+
+
+
 
 adminRouter.post("/createAdmin", createAdmin)
 
