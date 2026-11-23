@@ -6,7 +6,7 @@ const userMiddleWare = async (req, res, next) => {
     try {
 
         const { token } = req.cookies;
-        console.log(token)
+        // console.log(token)
         const payload = await jwt.verify(token, process.env.JWT_SECRET)
 
         const { id } = payload;
@@ -23,11 +23,12 @@ const userMiddleWare = async (req, res, next) => {
                 msg: "error from token"
             })
         }
+        console.log("verifed user")
 
         req.user = id
         next();
     } catch (error) {
-        res.send("error " + error.message)
+        res.send("Unauthorized: Invalid or missing token")
     }
 }
 

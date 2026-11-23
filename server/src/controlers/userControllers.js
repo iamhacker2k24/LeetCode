@@ -232,12 +232,12 @@ const userStats = async (req, res) => {
 
         const data = await userDetails.findById(id)
         if (!data) {
-            res.status(false).json({
+            return res.status(false).json({
                 success: false,
                 msg: "sorry not data found "
             })
         }
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             msg: data
         })

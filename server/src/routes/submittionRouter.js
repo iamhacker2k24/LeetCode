@@ -5,11 +5,11 @@ const submittionRouter = express.Router();
 
 
 
-submittionRouter.post("/runques/:id", runQues) //default test case 
-submittionRouter.post("/runquesWithtestCase/:id", runQuesWithTestCase) //test case given by user 
+submittionRouter.post("/runques/:id", userMiddleWare, runQues) //default test case 
+submittionRouter.post("/runquesWithtestCase/:id", userMiddleWare, runQuesWithTestCase) //test case given by user 
 submittionRouter.post("/submitques/:id", userMiddleWare, subMitques)
-submittionRouter.post("/likeques/:id", likeQues)
-submittionRouter.post("/isstar/:id", isStar)
+submittionRouter.post("/likeques/:id", userMiddleWare, likeQues)
+submittionRouter.get("/isstar/:id", userMiddleWare, isStar)
 
 
 

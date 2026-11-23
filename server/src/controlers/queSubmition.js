@@ -2,6 +2,7 @@ const Question = require("../model/createQues");
 const { solvedmap } = require("../model/solvedMap");
 const { submission } = require("../model/Submission");
 const testCase = require("../model/testCase");
+const { userDetails } = require("../model/userDetails");
 const RunCompiler = require("../runCode/onlinecompiler");
 
 
@@ -150,35 +151,87 @@ const subMitques = async (req, res) => {  //this will submit question with check
     }
 }
 
-const likeQues = (req, res) => { // by usong this user can like or dis like question 
+const likeQues = async (req, res) => { // by usong this user can like or dis like question 
     try {
+        const userid = req.user
+        const { id } = req.params;
+        const { isLike, isDisLike } = req.body;
+        if (isLike === isDisLike) {
+            return res.status(400).json({
+                success: false,
+                msg: "Select either Like or Dislike"
+            });
+        }
+        console.log(isLike, isDisLike)
+        console.log(id)
+        console.log(userid)
+
+
+        // normall approach 
+        // if (isLike) {
+        //     await userDetails.findOneAndUpdate({ userid }, {
+        //         $push: {
+        //             likeQuestion: id
+        //         }
+        //     })
+        // }
+        // if (isDisLike) {
+        //     await userDetails.findOneAndUpdate({ userid }, {
+        //         $push: {
+        //             likeQuestion: id
+        //         }
+        //     })
+        // }
+        
+        //optimized approach 
+        await userDetails.findOneAndUpdate(
+            { userid },
+            {
+                $addToSet: {
+                    [isLike ? "likeQuestion" : "dislikeQustion"]: id
+                }
+            }
+        );
 
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
         return res.status(400).json({
-            success: true,
+            success: false,
             msg: "error from Question submition "
         })
-
     }
 }
 
 
-const isStar = (req, res) => { //by usong this user can star question 
+const isStar = async (req, res) => { //by usong this user can star question 
     try {
-        const id = req.user;
-        const quesStartId = req.body.params;
-        console.log(quesStartId)
-        console.log(id)
-
-
+        const userid = req.user
+        const { id } = req.params;
+        // console.log(id)
+        const findQues = await Question.findOne({ questionId: Number(id) })
+        console.log(userid)
+        if (!findQues) {
+            return res.status(400).json({
+                success: false,
+                msg: "sorry qustion not found"
+            })
+        }
+        await userDetails.findOneAndUpdate({ userid }, {
+            $push: {
+                starQues: id
+            }
+        })
+        return res.status(200).json({
+            success: true,
+            msg: "question start marked "
+        })
 
     } catch (error) {
         console.log("error from questionSubmition")
         console.log(error.message)
-        return resizeBy.status(400).json({
-            success: true,
+        return res.status(400).json({
+            success: false,
             msg: "error from Question submition "
         })
     }
