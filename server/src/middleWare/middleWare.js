@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const userData = require("../model/userData");
 require('dotenv').config()
 
-const adminMiddleWare = async (req, res, next) => {
+const middleWare = async (req, res, next) => {
     try {
 
         const { token } = req.cookies;
@@ -23,13 +23,13 @@ const adminMiddleWare = async (req, res, next) => {
                 msg: "error from token"
             })
         }
-        if (findUser.role !== "admin") {
-            return res.status(403).json({
-                success: false,
-                message: "Access denied. Admin only."
-            });
-        }
-
+        // if (findUser.role !== "admin") {
+        //     return res.status(403).json({
+        //         success: false,
+        //         message: "Access denied. Admin only."
+        //     });
+        // }
+        req.role = findUser.role;
         req.user = id
         next();
     } catch (error) {
@@ -37,4 +37,4 @@ const adminMiddleWare = async (req, res, next) => {
     }
 }
 
-module.exports = { adminMiddleWare }
+module.exports = { middleWare }

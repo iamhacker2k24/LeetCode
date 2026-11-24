@@ -1,44 +1,43 @@
 const express = require("express");
 const quesRouter = express.Router();
+const { CheckRole } = require("../middleWare/checkRole")
 const { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug,
     CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate,
     editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid } = require("../controlers/QuesControllers");
-const { userMiddleWare } = require("../middleWare/userMiddleWare");
-const { adminMiddleWare } = require("../middleWare/adminMiddleWare");
 
 
-quesRouter.post("/createques", adminMiddleWare, createQues) //admin only 
-quesRouter.post("/editques/:id", adminMiddleWare, editQues) //admin only 
-quesRouter.delete("/deleteques", adminMiddleWare ,deleteQues)  //admin only 
+quesRouter.post("/createques", CheckRole("admin"), createQues) //admin only 
+quesRouter.post("/editques/:id", CheckRole("admin"), editQues) //admin only 
+quesRouter.delete("/deleteques", CheckRole("admin"), deleteQues)  //admin only 
 
 
 
 
 
-quesRouter.get("/getallques", userMiddleWare, getAllques) //only get all quesions
-quesRouter.get("/getOneques/:id", getOneques) //only specific question details ok
-quesRouter.get("/getquesbyslung/:slug", getOnequesBySlug) //only specific question details ok
+quesRouter.get("/getallques", CheckRole("user"), getAllques) //only get all quesions
+quesRouter.get("/getOneques/:id", CheckRole("user"), getOneques) //only specific question details ok
+quesRouter.get("/getquesbyslung/:slug", CheckRole("user"), getOnequesBySlug) //only specific question details ok
 
 
 
 
 //create test case  
-quesRouter.post("/createtestCse", adminMiddleWare, CreateTestCse);
-quesRouter.post("/createtestcase", adminMiddleWare, CreateTestCse);
-quesRouter.put("/edittestcase/:id", adminMiddleWare, editTestCase);
-quesRouter.post("/edittestcase", adminMiddleWare, editTestCase);
-quesRouter.delete("/deletetestcase/:id", adminMiddleWare, deleteTestCase);
-quesRouter.delete("/deletetestcase", adminMiddleWare, deleteTestCase);
-quesRouter.get("/gettestcasebyid/:id", adminMiddleWare, getTestCaseByid); //get testCase by question id 
+quesRouter.post("/createtestCse", CheckRole("admin"), CreateTestCse);
+quesRouter.post("/createtestcase", CheckRole("admin"), CreateTestCse);
+quesRouter.put("/edittestcase/:id", CheckRole("admin"), editTestCase);
+quesRouter.post("/edittestcase", CheckRole("admin"), editTestCase);
+quesRouter.delete("/deletetestcase/:id", CheckRole("admin"), deleteTestCase);
+quesRouter.delete("/deletetestcase", CheckRole("admin"), deleteTestCase);
+quesRouter.get("/gettestcasebyid/:id", CheckRole("admin"), getTestCaseByid); //get testCase by question id 
 
 
 
 //create code template
-quesRouter.post("/createcodetemplate/:id", adminMiddleWare, createCodeTemplate);
-quesRouter.post("/createcodetemplate", adminMiddleWare, createCodeTemplate);
-quesRouter.put("/editcodetemplate/:id", adminMiddleWare, editCodeTemplate);
-quesRouter.delete("/deletecodetemplate/:id", adminMiddleWare, deleteCodeTemplate);
-quesRouter.get("/getcodetemplatebyid/:id", adminMiddleWare, getCodeTemplateByid);
+quesRouter.post("/createcodetemplate/:id", CheckRole("admin"), createCodeTemplate);
+quesRouter.post("/createcodetemplate", CheckRole("admin"), createCodeTemplate);
+quesRouter.put("/editcodetemplate/:id", CheckRole("admin"), editCodeTemplate);
+quesRouter.delete("/deletecodetemplate/:id", CheckRole("admin"), deleteCodeTemplate);
+quesRouter.get("/getcodetemplatebyid/:id", CheckRole("admin"), getCodeTemplateByid);
 
 
 

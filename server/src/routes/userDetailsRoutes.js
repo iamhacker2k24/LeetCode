@@ -1,13 +1,14 @@
 const express = require("express");
 const userDetailsRoutes = express.Router();
 const { UserDetails, SolvedMap, getUniqueUsername, userStats } = require("../controlers/userControllers")
-const { userMiddleWare } = require("../middleWare/userMiddleWare")
 
-userDetailsRoutes.post("/userdetails", userMiddleWare, UserDetails)
+const { CheckRole } = require("../middleWare/checkRole");
+
+userDetailsRoutes.post("/userdetails", UserDetails)
 //this router will give details of user budge ttal solve question and language solved all 
 
 //this 
-userDetailsRoutes.post("/getuniqueusername", userMiddleWare, getUniqueUsername)
+userDetailsRoutes.post("/getuniqueusername", CheckRole("user"), getUniqueUsername)
 
 userDetailsRoutes.post("/userstats/:username", userStats) // this will works on base on username ok
 

@@ -8,6 +8,8 @@ const { adminRouter } = require('./routes/adminAuth');
 const { quesRouter } = require('./routes/quesRouter');
 const { submittionRouter } = require('./routes/submittionRouter');
 const { userDetailsRoutes } = require('./routes/userDetailsRoutes');
+const { middleWare } = require('./middleWare/middleWare');
+const { CheckRole } = require('./middleWare/checkRole');
 
 
 const app = express();
@@ -25,11 +27,12 @@ app.use(cors({
 
 //authRouter
 app.use("/api/user", authRouter)
-app.use("/api/admin", adminRouter)
+app.use("/api/admin", middleWare, CheckRole("owner"), adminRouter)
 
 //question solved router 
-app.use("/api/user/qs", submittionRouter)
-app.use("/api/admin/qs", quesRouter)
+app.use("/api/user/qs", middleWare, CheckRole("user"), submittionRouter)
+
+app.use("/api/admin/qs", middleWare, quesRouter)
 
 
 //userDetailsRouter
