@@ -23,17 +23,21 @@ quesRouter.get("/getquesbyslung/:slug", getOnequesBySlug) //only specific questi
 
 //create test case  
 quesRouter.post("/createtestCse", CreateTestCse);
-quesRouter.post("/edittestcase", editTestCase); //later impl
-quesRouter.get("/deletetestcase", deleteTestCase); //later impl
+quesRouter.post("/createtestcase", CreateTestCse);
+quesRouter.put("/edittestcase/:id", editTestCase);
+quesRouter.post("/edittestcase", editTestCase);
+quesRouter.delete("/deletetestcase/:id", deleteTestCase);
+quesRouter.delete("/deletetestcase", deleteTestCase);
 quesRouter.get("/gettestcasebyid/:id", getTestCaseByid); //get testCase by question id 
 
 
 
-//create code temple
+//create code template
 quesRouter.post("/createcodetemplate/:id", createCodeTemplate);
-quesRouter.post("/editcodetemplate/:id", editCodeTemplate);//later impl
-quesRouter.post("/deletecodetemplate/:id", deleteCodeTemplate);//later impl
-quesRouter.get("/getcodetemplatebyid/:id", getCodeTemplateByid);//later impl
+quesRouter.post("/createcodetemplate", createCodeTemplate);
+quesRouter.put("/editcodetemplate/:id", editCodeTemplate);
+quesRouter.delete("/deletecodetemplate/:id", deleteCodeTemplate);
+quesRouter.get("/getcodetemplatebyid/:id", getCodeTemplateByid);
 
 
 

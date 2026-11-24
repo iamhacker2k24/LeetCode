@@ -11,7 +11,7 @@ const runQues = async (req, res) => {   //this is  with default test case
         const { id } = req.params;
         const { code, language, timeTaken } = req.body
         // console.log(req.body, id)
-        if (!code || !language || !timeTaken) {
+        if (!code || !language) {
             return res.status(400).json({
                 success: false,
                 msg: "pls fill all value "
@@ -265,14 +265,14 @@ const likeQues = async (req, res) => { // by usong this user can like or dis lik
         //         }
         //     })
         // }
-        
+
         //optimized approach 
         await userDetails.findOneAndUpdate(
-            { userid },
+            { userId: userid },
             {
-                $addToSet: {
-                    [isLike ? "likeQuestion" : "dislikeQustion"]: id
-                }
+                $addToSet: { [isLike ? "likeQuestion" : "dislikeQustion"]: id },
+                //pull need to like user prevous liek any question now they dislike it 
+                $pull: { [isLike ? "dislikeQustion" : "likeQuestion"]: id }
             }
         );
 

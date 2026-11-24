@@ -229,10 +229,24 @@ const getUniqueUsername = async (req, res) => {
 const userStats = async (req, res) => {
     try {
         // const username
+        const { username } = req.params
+
+        const user = await userDetails.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ success: false, msg: "User profile not found" });
+        }
+        const userId = user.userId;
+        const id = req.user;
+        if (userId != id) {
+            res.status(400).json({
+                success: false,
+                msg: "sorry something went wrong"
+            })
+        }
 
         const data = await userDetails.findById(id)
         if (!data) {
-            return res.status(false).json({
+            return res.status(400).json({
                 success: false,
                 msg: "sorry not data found "
             })
@@ -253,14 +267,26 @@ const userStats = async (req, res) => {
 
 const SolvedMap = async (req, res) => {
     try {
-
-        const data = await solvedmap.create(req.body)
-        // if (!data) {
-        //     res.status(false).json({
-        //         success: false,
-        //         msg: "sorry not data found "
-        //     })
-        // }
+        const { username } = req.params
+        const user = await userDetails.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ success: false, msg: "User profile not found" });
+        }
+        const userId = user.userId;
+        const id = req.user;
+        if (userId != id) {
+            res.status(400).json({
+                success: false,
+                msg: "sorry something went wrong"
+            })
+        }
+        const data = await solvedmap.findOne({ userId })
+        if (!data) {
+            res.status(false).json({
+                success: false,
+                msg: "sorry not data found "
+            })
+        }
 
         res.status(200).json({
             success: true,
