@@ -148,32 +148,28 @@ export async function checkAuthAdmin() {
       method: "GET",
       checkSuccess: true,
     });
+    // Live database role verification succeeded: keep localStorage in sync
+    if (data?.user) {
+      localStorage.setItem("user", JSON.stringify(data.user));
+    }
     return {
       isAdmin: true,
       data,
     };
   } catch (err) {
-    // Graceful fallback: check if user session exists with admin/owner role
+    // If backend rejects with 403 or 401, the user is definitely NOT an admin.
+    // Update local storage so stale cache cannot grant access
     try {
-      const auth = await checkAuthUser();
-      if (auth.isAuthenticated) {
-        let stored = null;
-        try {
-          stored = JSON.parse(localStorage.getItem("user") || "{}");
-        } catch {}
-        const role = (stored?.role || "").toLowerCase();
-        if (role === "admin" || role === "owner") {
-          return {
-            isAdmin: true,
-            data: stored,
-          };
-        }
+      const stored = JSON.parse(localStorage.getItem("user") || "null");
+      if (stored && stored.role !== "user") {
+        stored.role = "user";
+        localStorage.setItem("user", JSON.stringify(stored));
       }
     } catch {}
 
     return {
       isAdmin: false,
-      error: err.message,
+      error: err.message || "Admin access denied by server",
     };
   }
 }

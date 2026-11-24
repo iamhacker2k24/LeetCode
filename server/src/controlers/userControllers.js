@@ -162,11 +162,21 @@ const forgetPassword = (req, res) => {
     }
 }
 
-const me = (req, res) => {
-    res.status(200).json({
-        success: true,
-        msg: "login done "
-    })
+const me = async (req, res) => {
+    try {
+        const findUser = await userData.findById(req.user).select("-password");
+        return res.status(200).json({
+            success: true,
+            user: findUser,
+            role: req.role,
+            msg: "login done "
+        });
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            msg: error.message
+        });
+    }
 }
 
 

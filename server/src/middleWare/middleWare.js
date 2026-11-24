@@ -39,7 +39,10 @@ const middleWare = async (req, res, next) => {
         req.user = id
         next();
     } catch (error) {
-        res.send("error " + error.message)
+        return res.status(401).json({
+            success: false,
+            msg: `Unauthorized: ${error.message}`
+        });
     }
 }
 

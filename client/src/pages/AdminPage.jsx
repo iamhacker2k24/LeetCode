@@ -7,8 +7,14 @@ import {
   checkAuthAdmin,
   createQuestion,
   deleteQuestion,
+  getTestCasesById,
   createTestCase,
+  editTestCase,
+  deleteTestCase,
+  getCodeTemplateById,
   createCodeTemplate,
+  editCodeTemplate,
+  deleteCodeTemplate,
   createAdminUser,
   dismissAdminUser,
 } from "../services/api";
@@ -34,6 +40,9 @@ import {
   FiUserX,
   FiMail,
   FiLock,
+  FiEdit2,
+  FiX,
+  FiCheck,
 } from "react-icons/fi";
 
 const AdminPage = () => {
@@ -75,7 +84,7 @@ const AdminPage = () => {
     }, 3200);
   };
 
-  // Verify Admin Authentication on Mount via /api/admin/admincheck (with fallback)
+  // Verify Admin Authentication on Mount via /api/admin/admincheck (with live check)
   const verifyAdmin = useCallback(async () => {
     setIsCheckingAuth(true);
     try {
@@ -101,9 +110,229 @@ const AdminPage = () => {
     }
   }, []);
 
+  // Re-verify immediately on mount and on every window focus
   useEffect(() => {
     verifyAdmin();
+    const handleFocus = () => {
+      verifyAdmin();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [verifyAdmin]);
+
+  // Selected Question for Test Cases / Code Templates management
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [managerSubTab, setManagerSubTab] = useState("testcases"); // "testcases" | "templates"
+
+  // Test Cases State
+  const [testCasesList, setTestCasesList] = useState([]);
+  const [isLoadingTestCases, setIsLoadingTestCases] = useState(false);
+  const [isSubmittingTestCase, setIsSubmittingTestCase] = useState(false);
+  const [newTestCase, setNewTestCase] = useState({
+    input: "",
+    expectedOutput: "",
+    explanation: "",
+    isHidden: false,
+    isSample: true,
+  });
+  const [editingTestCase, setEditingTestCase] = useState(null);
+
+  // Code Templates State
+  const [codeTemplates, setCodeTemplates] = useState({
+    python: "",
+    cpp: "",
+    java: "",
+    C: "",
+  });
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [isSavingTemplates, setIsSavingTemplates] = useState(false);
+
+  // Load test cases for a specific question
+  const loadQuestionTestCases = useCallback(async (qId) => {
+    if (!qId && qId !== 0) return;
+    setIsLoadingTestCases(true);
+    try {
+      const res = await getTestCasesById(qId, { all: true });
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setTestCasesList(list);
+    } catch (err) {
+      console.error("Failed to load test cases:", err);
+      showToast(err.message || "Failed to load test cases", "error");
+      setTestCasesList([]);
+    } finally {
+      setIsLoadingTestCases(false);
+    }
+  }, []);
+
+  // Load code templates for a specific question
+  const loadQuestionTemplates = useCallback(async (qId) => {
+    if (!qId && qId !== 0) return;
+    setIsLoadingTemplates(true);
+    try {
+      const res = await getCodeTemplateById(qId);
+      const data = res?.data || res;
+      if (data && typeof data === "object") {
+        setCodeTemplates({
+          python: data.python || data.pythonTemplate || "",
+          cpp: data.cpp || data.cppTemplate || "",
+          java: data.java || data.javaTemplate || "",
+          C: data.C || data.c || data.cTemplate || "",
+        });
+      } else {
+        setCodeTemplates({
+          python: "class Solution:\n    def solve(self, nums, target):\n        pass",
+          cpp: "class Solution {\npublic:\n    vector<int> solve(vector<int>& nums, int target) {\n        \n    }\n};",
+          java: "class Solution {\n    public int[] solve(int[] nums, int target) {\n        return new int[]{};\n    }\n}",
+          C: "int* solve(int* nums, int numsSize, int target, int* returnSize) {\n    \n}",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load templates:", err);
+      setCodeTemplates({
+        python: "",
+        cpp: "",
+        java: "",
+        C: "",
+      });
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  }, []);
+
+  // Open Question Manager directly for a question
+  const openQuestionManager = (ques, subTab = "testcases") => {
+    setSelectedQuestion(ques);
+    setManagerSubTab(subTab);
+    setActiveTab("testcases");
+    const qId = ques.questionId !== undefined ? ques.questionId : ques._id;
+    loadQuestionTestCases(qId);
+    loadQuestionTemplates(qId);
+  };
+
+  // Add Test Case
+  const handleAddTestCase = async (e) => {
+    e.preventDefault();
+    if (!selectedQuestion) {
+      showToast("Please select a question first", "error");
+      return;
+    }
+    if (!newTestCase.input.trim() || !newTestCase.expectedOutput.trim()) {
+      showToast("Input and expected output are required", "error");
+      return;
+    }
+
+    setIsSubmittingTestCase(true);
+    try {
+      const qId = selectedQuestion.questionId !== undefined ? selectedQuestion.questionId : selectedQuestion._id;
+      await createTestCase({
+        questionId: qId,
+        questionSlug: selectedQuestion.slug,
+        input: newTestCase.input.trim(),
+        expectedOutput: newTestCase.expectedOutput.trim(),
+        explanation: newTestCase.explanation.trim(),
+        isHidden: Boolean(newTestCase.isHidden),
+        isSample: Boolean(newTestCase.isSample),
+      });
+      showToast("Test case added successfully!");
+      setNewTestCase({
+        input: "",
+        expectedOutput: "",
+        explanation: "",
+        isHidden: false,
+        isSample: true,
+      });
+      await loadQuestionTestCases(qId);
+    } catch (err) {
+      console.error("Add test case error:", err);
+      showToast(err.message || "Failed to create testcase", "error");
+    } finally {
+      setIsSubmittingTestCase(false);
+    }
+  };
+
+  // Update Test Case
+  const handleUpdateTestCase = async (e) => {
+    e.preventDefault();
+    if (!editingTestCase) return;
+
+    try {
+      const tcId = editingTestCase.testCaseId !== undefined ? editingTestCase.testCaseId : editingTestCase._id;
+      await editTestCase(tcId, {
+        input: editingTestCase.input,
+        expectedOutput: editingTestCase.expectedOutput,
+        explanation: editingTestCase.explanation,
+        isHidden: Boolean(editingTestCase.isHidden),
+        isSample: Boolean(editingTestCase.isSample),
+      });
+      showToast(`Test case #${tcId} updated successfully!`);
+      setEditingTestCase(null);
+      const qId = selectedQuestion?.questionId !== undefined ? selectedQuestion?.questionId : selectedQuestion?._id;
+      if (qId !== undefined) await loadQuestionTestCases(qId);
+    } catch (err) {
+      console.error("Update test case error:", err);
+      showToast(err.message || "Failed to update test case", "error");
+    }
+  };
+
+  // Delete Test Case
+  const handleDeleteTestCase = async (tc) => {
+    const tcId = tc.testCaseId !== undefined ? tc.testCaseId : tc._id;
+    if (!window.confirm(`Are you sure you want to delete test case #${tcId}?`)) return;
+
+    try {
+      await deleteTestCase(tcId);
+      showToast(`Test case #${tcId} deleted successfully.`);
+      const qId = selectedQuestion?.questionId !== undefined ? selectedQuestion?.questionId : selectedQuestion?._id;
+      if (qId !== undefined) await loadQuestionTestCases(qId);
+    } catch (err) {
+      console.error("Delete test case error:", err);
+      showToast(err.message || "Failed to delete testcase", "error");
+    }
+  };
+
+  // Save / Update Code Templates
+  const handleSaveTemplates = async (e) => {
+    e.preventDefault();
+    if (!selectedQuestion) {
+      showToast("Please select a question first", "error");
+      return;
+    }
+
+    setIsSavingTemplates(true);
+    try {
+      const qId = selectedQuestion.questionId !== undefined ? selectedQuestion.questionId : selectedQuestion._id;
+      await createCodeTemplate(qId, {
+        questionId: qId,
+        python: codeTemplates.python,
+        cpp: codeTemplates.cpp,
+        java: codeTemplates.java,
+        C: codeTemplates.C,
+      });
+      showToast(`Code templates for Question #${qId} saved successfully!`);
+      await loadQuestionTemplates(qId);
+    } catch (err) {
+      console.error("Save templates error:", err);
+      showToast(err.message || "Failed to save code templates", "error");
+    } finally {
+      setIsSavingTemplates(false);
+    }
+  };
+
+  // Delete Code Templates
+  const handleDeleteTemplates = async () => {
+    if (!selectedQuestion) return;
+    const qId = selectedQuestion.questionId !== undefined ? selectedQuestion.questionId : selectedQuestion._id;
+    if (!window.confirm(`Are you sure you want to delete code templates for Question #${qId}?`)) return;
+
+    try {
+      await deleteCodeTemplate(qId);
+      showToast(`Templates for Question #${qId} deleted.`);
+      await loadQuestionTemplates(qId);
+    } catch (err) {
+      console.error("Delete templates error:", err);
+      showToast(err.message || "Failed to delete code templates", "error");
+    }
+  };
 
   // Fetch real questions from backend when verified
   const fetchQuestionsList = useCallback(async () => {
@@ -735,6 +964,23 @@ const AdminPage = () => {
           </button>
 
           <button
+            onClick={() => {
+              setActiveTab("testcases");
+              if (!selectedQuestion && questions.length > 0) {
+                openQuestionManager(questions[0], "testcases");
+              }
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+              activeTab === "testcases"
+                ? "bg-slate-800 text-white border border-slate-700 shadow-sm"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/40"
+            }`}
+          >
+            <FiLayers className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Test Cases & Templates</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("create")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
               activeTab === "create"
@@ -886,6 +1132,22 @@ const AdminPage = () => {
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => openQuestionManager(q, "testcases")}
+                                className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 transition"
+                                title="Manage Test Cases"
+                              >
+                                <FiLayers className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => openQuestionManager(q, "templates")}
+                                className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-blue-500/20 text-slate-300 hover:text-blue-400 transition"
+                                title="Manage Code Templates"
+                              >
+                                <FiCode className="w-3.5 h-3.5" />
+                              </button>
+
                               <Link
                                 to={`/problem/${q.questionId || q._id}`}
                                 className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition"
@@ -928,6 +1190,557 @@ const AdminPage = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            TAB: TEST CASES & CODE TEMPLATES MANAGEMENT
+           ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "testcases" && (
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
+            {/* Header & Question Selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <FiLayers className="w-5 h-5 text-emerald-400" />
+                  <span>Test Cases & Starter Templates</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Manage evaluation test cases and multi-language starter templates for any problem.
+                </p>
+              </div>
+
+              {/* Question Dropdown */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-400 whitespace-nowrap font-medium">Select Problem:</span>
+                <select
+                  value={selectedQuestion ? (selectedQuestion.questionId !== undefined ? selectedQuestion.questionId : selectedQuestion._id) : ""}
+                  onChange={(e) => {
+                    const found = questions.find(
+                      (q) => String(q.questionId !== undefined ? q.questionId : q._id) === String(e.target.value)
+                    );
+                    if (found) {
+                      openQuestionManager(found, managerSubTab);
+                    }
+                  }}
+                  className="bg-[#020617] border border-slate-700 text-white text-xs rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-green-400 max-w-xs truncate"
+                >
+                  {questions.map((q) => (
+                    <option key={q._id || q.questionId} value={q.questionId !== undefined ? q.questionId : q._id}>
+                      #{q.questionId || q._id} - {q.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {selectedQuestion ? (
+              <div className="space-y-6">
+                {/* Selected Question Quick Summary Bar */}
+                <div className="p-4 bg-[#020617] border border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-emerald-400 font-black text-sm">
+                      #{selectedQuestion.questionId || selectedQuestion._id}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">{selectedQuestion.title}</h3>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        slug: /{selectedQuestion.slug}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full border text-[10px] font-semibold capitalize ${
+                        (selectedQuestion.difficulty || "Easy").toLowerCase() === "easy"
+                          ? "text-green-400 bg-green-500/10 border-green-500/20"
+                          : (selectedQuestion.difficulty || "").toLowerCase() === "medium"
+                          ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
+                          : "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                      }`}
+                    >
+                      {selectedQuestion.difficulty || "Easy"}
+                    </span>
+
+                    {selectedQuestion.isPremium && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[10px] font-mono border border-amber-500/30">
+                        PRO
+                      </span>
+                    )}
+
+                    <Link
+                      to={`/problem/${selectedQuestion.questionId || selectedQuestion._id}`}
+                      target="_blank"
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs flex items-center gap-1 transition"
+                    >
+                      <FiEye className="w-3.5 h-3.5" />
+                      <span>View in Editor</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Sub-tab Switcher: Test Cases vs Code Templates */}
+                <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+                  <button
+                    onClick={() => setManagerSubTab("testcases")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      managerSubTab === "testcases"
+                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <FiLayers className="w-3.5 h-3.5" />
+                    <span>Test Cases ({testCasesList.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setManagerSubTab("templates")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      managerSubTab === "templates"
+                        ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <FiCode className="w-3.5 h-3.5" />
+                    <span>Code Templates</span>
+                  </button>
+                </div>
+
+                {/* ── Subtab 1: Test Cases Management ── */}
+                {managerSubTab === "testcases" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Test Cases List (Left 7 cols) */}
+                    <div className="lg:col-span-7 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                          Existing Test Cases
+                        </h4>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          {testCasesList.length} total test case{testCasesList.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+
+                      {isLoadingTestCases ? (
+                        <div className="py-12 text-center text-slate-400 font-mono text-xs">
+                          <div className="w-6 h-6 border-2 border-slate-700 border-t-emerald-400 rounded-full animate-spin mx-auto mb-2" />
+                          Loading test cases...
+                        </div>
+                      ) : testCasesList.length > 0 ? (
+                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                          {testCasesList.map((tc, idx) => {
+                            const tcId = tc.testCaseId !== undefined ? tc.testCaseId : tc._id;
+                            const isSample = Boolean(tc.isSample);
+                            const isHidden = Boolean(tc.isHidden);
+
+                            return (
+                              <div
+                                key={tc._id || tc.testCaseId || idx}
+                                className="p-4 bg-[#020617] border border-slate-800 rounded-2xl space-y-2 hover:border-slate-700 transition"
+                              >
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs font-bold text-white">
+                                      #{tcId}
+                                    </span>
+                                    {isSample && (
+                                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
+                                        Sample
+                                      </span>
+                                    )}
+                                    {isHidden && (
+                                      <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] font-mono border border-purple-500/20">
+                                        Hidden (Evaluation)
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => setEditingTestCase(tc)}
+                                      className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white transition"
+                                      title="Edit Test Case"
+                                    >
+                                      <FiEdit2 className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteTestCase(tc)}
+                                      className="p-1 rounded bg-slate-800 text-slate-400 hover:text-rose-400 transition"
+                                      title="Delete Test Case"
+                                    >
+                                      <FiTrash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1.5 text-xs font-mono">
+                                  <div>
+                                    <span className="text-slate-500 text-[10px] uppercase block">Input:</span>
+                                    <pre className="bg-[#0f172a] p-2 rounded-lg text-slate-200 text-xs overflow-x-auto whitespace-pre-wrap">
+                                      {tc.input}
+                                    </pre>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-500 text-[10px] uppercase block">Expected Output:</span>
+                                    <pre className="bg-[#0f172a] p-2 rounded-lg text-emerald-400 text-xs overflow-x-auto whitespace-pre-wrap">
+                                      {tc.expectedOutput}
+                                    </pre>
+                                  </div>
+                                  {tc.explanation && (
+                                    <div className="text-[11px] text-slate-400 font-sans italic pt-1">
+                                      {tc.explanation}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center bg-[#020617] border border-slate-800 rounded-2xl text-slate-500 text-xs space-y-2">
+                          <FiLayers className="w-8 h-8 mx-auto text-slate-600" />
+                          <p className="font-semibold text-slate-400">No test cases found for this problem</p>
+                          <p className="text-[11px]">Use the form on the right to add the first sample or hidden testcase.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Add / Edit Test Case Form (Right 5 cols) */}
+                    <div className="lg:col-span-5 bg-[#020617] border border-slate-800 rounded-2xl p-5 space-y-4">
+                      {editingTestCase ? (
+                        <form onSubmit={handleUpdateTestCase} className="space-y-4">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                            <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <FiEdit2 className="w-3.5 h-3.5" />
+                              <span>Edit Test Case #{editingTestCase.testCaseId || editingTestCase._id}</span>
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => setEditingTestCase(null)}
+                              className="text-slate-400 hover:text-white"
+                            >
+                              <FiX className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                              Input Data
+                            </label>
+                            <textarea
+                              rows="3"
+                              required
+                              value={editingTestCase.input || ""}
+                              onChange={(e) =>
+                                setEditingTestCase((prev) => ({ ...prev, input: e.target.value }))
+                              }
+                              className="w-full p-2.5 bg-[#0f172a] border border-slate-700 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-amber-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                              Expected Output
+                            </label>
+                            <textarea
+                              rows="3"
+                              required
+                              value={editingTestCase.expectedOutput || ""}
+                              onChange={(e) =>
+                                setEditingTestCase((prev) => ({ ...prev, expectedOutput: e.target.value }))
+                              }
+                              className="w-full p-2.5 bg-[#0f172a] border border-slate-700 rounded-xl text-emerald-400 text-xs font-mono focus:outline-none focus:border-amber-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                              Explanation (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={editingTestCase.explanation || ""}
+                              onChange={(e) =>
+                                setEditingTestCase((prev) => ({ ...prev, explanation: e.target.value }))
+                              }
+                              className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-amber-400"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-4 pt-1">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(editingTestCase.isSample)}
+                                onChange={(e) =>
+                                  setEditingTestCase((prev) => ({ ...prev, isSample: e.target.checked }))
+                                }
+                                className="rounded text-amber-500 focus:ring-amber-500"
+                              />
+                              <span>Sample Test Case</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(editingTestCase.isHidden)}
+                                onChange={(e) =>
+                                  setEditingTestCase((prev) => ({ ...prev, isHidden: e.target.checked }))
+                                }
+                                className="rounded text-purple-500 focus:ring-purple-500"
+                              />
+                              <span>Hidden (Judge)</span>
+                            </label>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-2">
+                            <button
+                              type="submit"
+                              className="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+                            >
+                              <FiSave className="w-3.5 h-3.5" />
+                              <span>Save Changes</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingTestCase(null)}
+                              className="px-3 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700 transition"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <form onSubmit={handleAddTestCase} className="space-y-4">
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-800">
+                            <FiPlus className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Add New Test Case</span>
+                          </h4>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                              Input Data <span className="text-rose-400">*</span>
+                            </label>
+                            <textarea
+                              rows="3"
+                              required
+                              value={newTestCase.input}
+                              onChange={(e) =>
+                                setNewTestCase((prev) => ({ ...prev, input: e.target.value }))
+                              }
+                              placeholder="e.g. nums = [2,7,11,15], target = 9"
+                              className="w-full p-2.5 bg-[#0f172a] border border-slate-700 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-emerald-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                              Expected Output <span className="text-rose-400">*</span>
+                            </label>
+                            <textarea
+                              rows="3"
+                              required
+                              value={newTestCase.expectedOutput}
+                              onChange={(e) =>
+                                setNewTestCase((prev) => ({ ...prev, expectedOutput: e.target.value }))
+                              }
+                              placeholder="e.g. [0,1]"
+                              className="w-full p-2.5 bg-[#0f172a] border border-slate-700 rounded-xl text-emerald-400 text-xs font-mono focus:outline-none focus:border-emerald-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                              Explanation (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={newTestCase.explanation}
+                              onChange={(e) =>
+                                setNewTestCase((prev) => ({ ...prev, explanation: e.target.value }))
+                              }
+                              placeholder="e.g. Because nums[0] + nums[1] == 9, we return [0, 1]"
+                              className="w-full px-3 py-2 bg-[#0f172a] border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-400"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-4 pt-1">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={newTestCase.isSample}
+                                onChange={(e) =>
+                                  setNewTestCase((prev) => ({ ...prev, isSample: e.target.checked }))
+                                }
+                                className="rounded text-emerald-500 focus:ring-emerald-500"
+                              />
+                              <span>Sample Test Case</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={newTestCase.isHidden}
+                                onChange={(e) =>
+                                  setNewTestCase((prev) => ({ ...prev, isHidden: e.target.checked }))
+                                }
+                                className="rounded text-purple-500 focus:ring-purple-500"
+                              />
+                              <span>Hidden (Judge)</span>
+                            </label>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isSubmittingTestCase}
+                            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs rounded-xl transition duration-200 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isSubmittingTestCase ? (
+                              <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <FiPlus className="w-4 h-4 stroke-[3]" />
+                            )}
+                            <span>{isSubmittingTestCase ? "Saving..." : "Add Test Case to Problem"}</span>
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Subtab 2: Code Templates Management ── */}
+                {managerSubTab === "templates" && (
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <FiCode className="w-4 h-4 text-blue-400" />
+                          <span>Starter Code Templates (4 Languages)</span>
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          These code snippets are loaded into the code editor when a user starts solving this problem.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDeleteTemplates}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs font-semibold rounded-xl border border-slate-700/80 hover:border-rose-500/30 transition flex items-center gap-1.5"
+                        >
+                          <FiTrash2 className="w-3.5 h-3.5" />
+                          <span>Delete Templates</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveTemplates}
+                          disabled={isSavingTemplates}
+                          className="px-4 py-1.5 bg-blue-500 hover:bg-blue-400 text-white font-extrabold text-xs rounded-xl transition shadow-md shadow-blue-500/20 flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {isSavingTemplates ? (
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <FiSave className="w-3.5 h-3.5" />
+                          )}
+                          <span>Save Templates</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {isLoadingTemplates ? (
+                      <div className="py-12 text-center text-slate-400 font-mono text-xs">
+                        <div className="w-6 h-6 border-2 border-slate-700 border-t-blue-400 rounded-full animate-spin mx-auto mb-2" />
+                        Loading templates from database...
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Python */}
+                        <div className="bg-[#020617] border border-slate-800 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-yellow-400 font-mono flex items-center gap-1.5">
+                              <span>🐍 Python 3</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">python</span>
+                          </div>
+                          <textarea
+                            rows="7"
+                            value={codeTemplates.python}
+                            onChange={(e) =>
+                              setCodeTemplates((prev) => ({ ...prev, python: e.target.value }))
+                            }
+                            placeholder="class Solution:&#10;    def solve(self, nums, target):&#10;        pass"
+                            className="w-full p-3 bg-[#0f172a] border border-slate-700 rounded-xl text-green-400 text-xs font-mono focus:outline-none focus:border-blue-400 leading-relaxed"
+                          />
+                        </div>
+
+                        {/* C++ */}
+                        <div className="bg-[#020617] border border-slate-800 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-blue-400 font-mono flex items-center gap-1.5">
+                              <span>⚡ C++</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">cpp</span>
+                          </div>
+                          <textarea
+                            rows="7"
+                            value={codeTemplates.cpp}
+                            onChange={(e) =>
+                              setCodeTemplates((prev) => ({ ...prev, cpp: e.target.value }))
+                            }
+                            placeholder="class Solution {&#10;public:&#10;    vector<int> solve(vector<int>& nums, int target) {&#10;        &#10;    }&#10;};"
+                            className="w-full p-3 bg-[#0f172a] border border-slate-700 rounded-xl text-green-400 text-xs font-mono focus:outline-none focus:border-blue-400 leading-relaxed"
+                          />
+                        </div>
+
+                        {/* Java */}
+                        <div className="bg-[#020617] border border-slate-800 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-amber-400 font-mono flex items-center gap-1.5">
+                              <span>☕ Java</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">java</span>
+                          </div>
+                          <textarea
+                            rows="7"
+                            value={codeTemplates.java}
+                            onChange={(e) =>
+                              setCodeTemplates((prev) => ({ ...prev, java: e.target.value }))
+                            }
+                            placeholder="class Solution {&#10;    public int[] solve(int[] nums, int target) {&#10;        return new int[]{};&#10;    }&#10;}"
+                            className="w-full p-3 bg-[#0f172a] border border-slate-700 rounded-xl text-green-400 text-xs font-mono focus:outline-none focus:border-blue-400 leading-relaxed"
+                          />
+                        </div>
+
+                        {/* C */}
+                        <div className="bg-[#020617] border border-slate-800 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-indigo-400 font-mono flex items-center gap-1.5">
+                              <span>⚙️ C</span>
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">C</span>
+                          </div>
+                          <textarea
+                            rows="7"
+                            value={codeTemplates.C}
+                            onChange={(e) =>
+                              setCodeTemplates((prev) => ({ ...prev, C: e.target.value }))
+                            }
+                            placeholder="int* solve(int* nums, int numsSize, int target, int* returnSize) {&#10;    &#10;}"
+                            className="w-full p-3 bg-[#0f172a] border border-slate-700 rounded-xl text-green-400 text-xs font-mono focus:outline-none focus:border-blue-400 leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 text-xs">
+                <FiLayers className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+                <p>No question selected. Select a question above or from the Questions List.</p>
+              </div>
+            )}
           </div>
         )}
 
