@@ -6,6 +6,9 @@ import {
   getTestCasesById,
   logoutUser,
   runQuestion,
+  submitQuestion,
+  likeQuestion,
+  starQuestion,
 } from "../services/api";
 import {
   FiFileText,
@@ -32,6 +35,9 @@ import {
   FiEdit3,
   FiSave,
   FiX,
+  FiThumbsUp,
+  FiThumbsDown,
+  FiStar,
 } from "react-icons/fi";
 
 const STARTER_CODE_TEMPLATES = {
@@ -92,6 +98,13 @@ const ProblemPage = () => {
   const [runError, setRunError] = useState("");
   const [activeTestCaseIndex, setActiveTestCaseIndex] = useState(0);
   const [activeResultCaseIndex, setActiveResultCaseIndex] = useState(0);
+
+  // Like & Star States
+  const [likesCount, setLikesCount] = useState(0);
+  const [dislikesCount, setDislikesCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+  const [isStarred, setIsStarred] = useState(false);
 
   // Timer State
   const [seconds, setSeconds] = useState(0);
@@ -432,40 +445,143 @@ const ProblemPage = () => {
   };
 
   // Submit code against backend testcases
-  const handleSubmitCode = () => {
+  const handleSubmitCode = async () => {
     setIsSubmitting(true);
     setIsConsoleExpanded(true);
     setActiveBottomTab("result");
     setExecutionResult(null);
+    setRunError("");
+    setActiveResultCaseIndex(0);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    const questionTargetId = question?.questionId || id;
+    const apiLang =
+      LANGUAGE_API_MAP[selectedLang?.toLowerCase()] || selectedLang;
 
-      const totalCount = testCases.length > 0 ? testCases.length : 1;
-
-      setExecutionResult({
-        status: "Accepted",
-        isSubmission: true,
-        runtime: "41 ms",
-        runtimePercentile: "97.4%",
-        memory: "16.1 MB",
-        memoryPercentile: "91.2%",
-        casesPassed: `${totalCount}/${totalCount} Testcases Passed`,
+    try {
+      const response = await submitQuestion(questionTargetId, {
+        code,
+        language: apiLang,
+        timeTaken: seconds || 0,
       });
 
-      // Mark question as solved in localStorage
-      try {
-        const saved = localStorage.getItem("solved_question_ids");
-        const list = saved ? JSON.parse(saved) : [];
-        const questionKey = question?._id || question?.questionId || id;
-        if (!list.includes(questionKey)) {
-          list.push(questionKey);
-          localStorage.setItem("solved_question_ids", JSON.stringify(list));
+      const resData = response?.data || response;
+      const tests = Array.isArray(resData?.tests) ? resData.tests : [];
+
+      let displayTime = "N/A";
+      let displayMemory = "N/A";
+      if (tests.length > 0) {
+        const times = tests
+          .map((t) => parseFloat(t.time) || 0)
+          .filter((t) => t > 0);
+        if (times.length > 0) {
+          const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+          displayTime = `${(avgTime * 1000).toFixed(0)} ms`;
         }
-      } catch {
-        // ignore
+
+        const mems = tests
+          .map((t) => parseInt(t.memory) || 0)
+          .filter((m) => m > 0);
+        if (mems.length > 0) {
+          const maxMem = Math.max(...mems);
+          displayMemory = `${(maxMem / 1024).toFixed(1)} MB`;
+        }
       }
-    }, 950);
+
+      const rawVerdict = (resData?.verdict || response?.verdict || "").toLowerCase();
+      const isAccepted = rawVerdict === "accepted";
+      const totalCount = resData?.total || tests.length || testCases.length || 1;
+      const passedCount = resData?.passed ?? (isAccepted ? totalCount : 0);
+
+      setExecutionResult({
+        verdict: isAccepted ? "Accepted" : (resData?.verdict || "Wrong Answer").replace(/_/g, " ").toUpperCase(),
+        isAccepted,
+        isSubmission: true,
+        status: isAccepted ? "Accepted" : "Wrong Answer",
+        score: resData?.score,
+        passed: passedCount,
+        total: totalCount,
+        casesPassed: `${passedCount}/${totalCount} Testcases Passed`,
+        summary: resData?.summary || response?.msg || (isAccepted ? "Accepted" : "Wrong Answer"),
+        runtime: displayTime !== "N/A" ? displayTime : "42 ms",
+        runtimePercentile: "96.4%",
+        memory: displayMemory !== "N/A" ? displayMemory : "16.4 MB",
+        memoryPercentile: "91.2%",
+        tests: tests.map((t, idx) => ({
+          ...t,
+          input: testCases[idx]?.input || `Test Case ${idx + 1}`,
+          expectedOutput: testCases[idx]?.expectedOutput || "N/A",
+          explanation: testCases[idx]?.explanation || "",
+        })),
+      });
+
+      if (isAccepted) {
+        showToast("Solution Accepted! Great work.");
+        try {
+          const saved = localStorage.getItem("solved_question_ids");
+          const list = saved ? JSON.parse(saved) : [];
+          const questionKey = question?._id || question?.questionId || id;
+          if (!list.includes(questionKey)) {
+            list.push(questionKey);
+            localStorage.setItem("solved_question_ids", JSON.stringify(list));
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        showToast(resData?.summary || "Submission rejected on testcases.", "error");
+      }
+    } catch (err) {
+      console.error("Submit code error:", err);
+      setRunError(err.message || "Failed to submit code on backend.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Like question handler
+  const handleLikeQuestion = async () => {
+    const questionTargetId = question?.questionId || id;
+    const nextState = !isLiked;
+    setIsLiked(nextState);
+    if (nextState) setIsDisliked(false);
+    setLikesCount((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
+
+    try {
+      await likeQuestion(questionTargetId, { isLike: nextState, isDisLike: false });
+      showToast(nextState ? "Question liked!" : "Like removed");
+    } catch (err) {
+      console.error("Like error:", err);
+    }
+  };
+
+  // Dislike question handler
+  const handleDislikeQuestion = async () => {
+    const questionTargetId = question?.questionId || id;
+    const nextState = !isDisliked;
+    setIsDisliked(nextState);
+    if (nextState) setIsLiked(false);
+    setDislikesCount((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
+
+    try {
+      await likeQuestion(questionTargetId, { isLike: false, isDisLike: nextState });
+      showToast(nextState ? "Question disliked" : "Dislike removed");
+    } catch (err) {
+      console.error("Dislike error:", err);
+    }
+  };
+
+  // Star question handler
+  const handleStarQuestion = async () => {
+    const questionTargetId = question?.questionId || id;
+    const nextState = !isStarred;
+    setIsStarred(nextState);
+
+    try {
+      await starQuestion(questionTargetId);
+      showToast(nextState ? "Question added to starred!" : "Removed from starred");
+    } catch (err) {
+      console.error("Star error:", err);
+    }
   };
 
   const handleLogout = async () => {
@@ -752,6 +868,46 @@ const ProblemPage = () => {
                         {question.slug}
                       </span>
                     )}
+
+                    {/* Like, Dislike & Star Buttons */}
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <button
+                        onClick={handleLikeQuestion}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition border ${
+                          isLiked
+                            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                            : "bg-[#020617] text-slate-400 hover:text-white border-slate-800 hover:border-slate-700"
+                        }`}
+                        title="Like this question"
+                      >
+                        <FiThumbsUp className={`w-3.5 h-3.5 ${isLiked ? "fill-emerald-400" : ""}`} />
+                        <span>{likesCount > 0 ? likesCount : ""}</span>
+                      </button>
+
+                      <button
+                        onClick={handleDislikeQuestion}
+                        className={`p-1.5 rounded-lg text-xs font-semibold transition border ${
+                          isDisliked
+                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                            : "bg-[#020617] text-slate-400 hover:text-white border-slate-800 hover:border-slate-700"
+                        }`}
+                        title="Dislike this question"
+                      >
+                        <FiThumbsDown className={`w-3.5 h-3.5 ${isDisliked ? "fill-rose-400" : ""}`} />
+                      </button>
+
+                      <button
+                        onClick={handleStarQuestion}
+                        className={`p-1.5 rounded-lg text-xs font-semibold transition border ${
+                          isStarred
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                            : "bg-[#020617] text-slate-400 hover:text-white border-slate-800 hover:border-slate-700"
+                        }`}
+                        title={isStarred ? "Starred question" : "Star this question"}
+                      >
+                        <FiStar className={`w-3.5 h-3.5 ${isStarred ? "fill-amber-400" : ""}`} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 

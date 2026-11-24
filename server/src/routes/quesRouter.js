@@ -4,43 +4,31 @@ const { CheckRole } = require("../middleWare/checkRole")
 const { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySlug,
     CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate,
     editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid } = require("../controlers/QuesControllers");
+const { middleWare } = require("../middleWare/middleWare");
 
-
-quesRouter.post("/createques", CheckRole("admin"), createQues) //admin only 
-quesRouter.post("/editques/:id", CheckRole("admin"), editQues) //admin only 
-quesRouter.delete("/deleteques", CheckRole("admin"), deleteQues)  //admin only 
-
-
+quesRouter.post("/createques", middleWare, CheckRole("admin", "owner"), createQues);
+quesRouter.post("/editques/:id", middleWare, CheckRole("admin", "owner"), editQues);
+quesRouter.delete("/deleteques", middleWare, CheckRole("admin", "owner"), deleteQues);
 
 
 
-quesRouter.get("/getallques", CheckRole("user"), getAllques) //only get all quesions
-quesRouter.get("/getOneques/:id", CheckRole("user"), getOneques) //only specific question details ok
-quesRouter.get("/getquesbyslung/:slug", CheckRole("user"), getOnequesBySlug) //only specific question details ok
-
-
+quesRouter.get("/getallques", getAllques);
+quesRouter.get("/getOneques/:id", getOneques);
+quesRouter.get("/getquesbyslung/:slug", getOnequesBySlug);
+quesRouter.get("/gettestcasebyid/:id", getTestCaseByid);
+quesRouter.get("/getcodetemplatebyid/:id", getCodeTemplateByid);
 
 
 //create test case  
-quesRouter.post("/createtestCse", CheckRole("admin"), CreateTestCse);
-quesRouter.post("/createtestcase", CheckRole("admin"), CreateTestCse);
-quesRouter.put("/edittestcase/:id", CheckRole("admin"), editTestCase);
-quesRouter.post("/edittestcase", CheckRole("admin"), editTestCase);
-quesRouter.delete("/deletetestcase/:id", CheckRole("admin"), deleteTestCase);
-quesRouter.delete("/deletetestcase", CheckRole("admin"), deleteTestCase);
-quesRouter.get("/gettestcasebyid/:id", CheckRole("admin"), getTestCaseByid); //get testCase by question id 
-
+quesRouter.post("/createtestCse", middleWare, CheckRole("admin", "owner"), CreateTestCse);
+quesRouter.put("/edittestcase/:id", middleWare, CheckRole("admin", "owner"), editTestCase);
+quesRouter.delete("/deletetestcase/:id", middleWare, CheckRole("admin", "owner"), deleteTestCase);
 
 
 //create code template
-quesRouter.post("/createcodetemplate/:id", CheckRole("admin"), createCodeTemplate);
-quesRouter.post("/createcodetemplate", CheckRole("admin"), createCodeTemplate);
-quesRouter.put("/editcodetemplate/:id", CheckRole("admin"), editCodeTemplate);
-quesRouter.delete("/deletecodetemplate/:id", CheckRole("admin"), deleteCodeTemplate);
-quesRouter.get("/getcodetemplatebyid/:id", CheckRole("admin"), getCodeTemplateByid);
-
-
-
+quesRouter.post("/createcodetemplate/:id", middleWare, CheckRole("admin", "owner"), createCodeTemplate);
+quesRouter.put("/editcodetemplate/:id", middleWare, CheckRole("admin", "owner"), editCodeTemplate);
+quesRouter.delete("/deletecodetemplate/:id", middleWare, CheckRole("admin", "owner"), deleteCodeTemplate);
 
 
 module.exports = { quesRouter }

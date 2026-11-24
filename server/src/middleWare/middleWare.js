@@ -7,6 +7,12 @@ const middleWare = async (req, res, next) => {
 
         const { token } = req.cookies;
         console.log(token)
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                msg: "Unauthorized: No token provided"
+            });
+        }
         const payload = await jwt.verify(token, process.env.JWT_SECRET)
 
         const { id } = payload;

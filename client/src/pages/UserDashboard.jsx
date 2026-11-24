@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { logoutUser } from "../services/api";
+import {
+  logoutUser,
+  getUserStats,
+  getSolvedMap,
+  getAllQuestions,
+} from "../services/api";
 import {
   FiCheckCircle,
   FiXCircle,
   FiActivity,
   FiBarChart2,
   FiAward,
-  FiCalendar,
   FiClock,
   FiCode,
   FiExternalLink,
@@ -16,221 +20,30 @@ import {
   FiLinkedin,
   FiGlobe,
   FiMapPin,
-  FiTrendingUp,
-  FiChevronRight,
   FiFileText,
-  FiCheck,
   FiLayers,
+  FiHeart,
+  FiStar,
+  FiAlertCircle,
+  FiRefreshCw,
 } from "react-icons/fi";
-import { BsFire, BsCoin, BsTrophy, BsShieldCheck } from "react-icons/bs";
-
-// ════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA FOR USER DASHBOARD (EASILY REPLACEABLE WITH BACKEND API LATER)
-// ════════════════════════════════════════════════════════════════════════════
-export const DUMMY_USER_STATS = {
-  profile: {
-    username: "dev_coder",
-    name: "Dev",
-    role: "Full-Stack Engineer & Competitive Programmer",
-    location: "Global",
-    website: "https://github.com",
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
-    globalRank: 14289,
-    topPercentile: 4.2,
-    coins: 340,
-    streak: 14,
-    views: 1420,
-    solutionUpvotes: 184,
-  },
-  solvedStats: {
-    totalSolved: 348,
-    totalQuestions: 3120,
-    beatsPercentage: 84.6,
-    easy: {
-      solved: 162,
-      total: 820,
-      beats: 89.2,
-    },
-    medium: {
-      solved: 154,
-      total: 1640,
-      beats: 78.5,
-    },
-    hard: {
-      solved: 32,
-      total: 660,
-      beats: 92.1,
-    },
-    totalSubmissions: 894,
-    acceptedSubmissions: 542,
-    acceptanceRate: 60.6,
-  },
-  contestStats: {
-    rating: 1842,
-    globalRank: 12450,
-    topPercentage: 3.8,
-    attendedContests: 18,
-    ratingHistory: [
-      { contest: "Contest 382", rating: 1510 },
-      { contest: "Contest 383", rating: 1565 },
-      { contest: "Contest 384", rating: 1540 },
-      { contest: "Contest 385", rating: 1620 },
-      { contest: "Contest 386", rating: 1675 },
-      { contest: "Contest 387", rating: 1710 },
-      { contest: "Contest 388", rating: 1690 },
-      { contest: "Contest 389", rating: 1755 },
-      { contest: "Contest 390", rating: 1810 },
-      { contest: "Contest 391", rating: 1842 },
-    ],
-  },
-  languages: [
-    { name: "Python", solved: 182, color: "#38bdf8" },
-    { name: "C++", solved: 94, color: "#a855f7" },
-    { name: "Java", solved: 52, color: "#f97316" },
-    { name: "JavaScript", solved: 20, color: "#facc15" },
-  ],
-  skills: [
-    { name: "Array", count: 112 },
-    { name: "String", count: 84 },
-    { name: "Hash Table", count: 76 },
-    { name: "Dynamic Programming", count: 48 },
-    { name: "Two Pointers", count: 38 },
-    { name: "Binary Tree", count: 32 },
-    { name: "Depth-First Search", count: 28 },
-    { name: "Binary Search", count: 24 },
-  ],
-  badges: [
-    { title: "50 Days Badge 2026", date: "Jan 2026", tier: "Gold" },
-    { title: "Knight Medal", date: "Rating 1800+", tier: "Purple" },
-    { title: "100 Problems Solved", date: "Dec 2025", tier: "Bronze" },
-    { title: "Top 100 Liked", date: "Nov 2025", tier: "Silver" },
-  ],
-  recentSubmissions: [
-    {
-      id: "1",
-      questionId: "1",
-      title: "Two Sum",
-      status: "Accepted",
-      language: "Python",
-      runtime: "38 ms",
-      memory: "17.4 MB",
-      timeAgo: "2 hours ago",
-      difficulty: "Easy",
-    },
-    {
-      id: "2",
-      questionId: "20",
-      title: "Valid Parentheses",
-      status: "Accepted",
-      language: "C++",
-      runtime: "0 ms",
-      memory: "7.2 MB",
-      timeAgo: "5 hours ago",
-      difficulty: "Easy",
-    },
-    {
-      id: "3",
-      questionId: "3",
-      title: "Longest Substring Without Repeating Characters",
-      status: "Accepted",
-      language: "Python",
-      runtime: "48 ms",
-      memory: "16.8 MB",
-      timeAgo: "Yesterday",
-      difficulty: "Medium",
-    },
-    {
-      id: "4",
-      questionId: "15",
-      title: "3Sum",
-      status: "Wrong Answer",
-      language: "Java",
-      runtime: "N/A",
-      memory: "N/A",
-      timeAgo: "2 days ago",
-      difficulty: "Medium",
-    },
-    {
-      id: "5",
-      questionId: "23",
-      title: "Merge k Sorted Lists",
-      status: "Accepted",
-      language: "C++",
-      runtime: "12 ms",
-      memory: "14.1 MB",
-      timeAgo: "3 days ago",
-      difficulty: "Hard",
-    },
-    {
-      id: "6",
-      questionId: "121",
-      title: "Best Time to Buy and Sell Stock",
-      status: "Accepted",
-      language: "Python",
-      runtime: "712 ms",
-      memory: "27.5 MB",
-      timeAgo: "4 days ago",
-      difficulty: "Easy",
-    },
-  ],
-};
-
-// ════════════════════════════════════════════════════════════════════════════
-// DUMMY 365-DAY SUBMISSION HEATMAP GENERATOR
-// ════════════════════════════════════════════════════════════════════════════
-function generateHeatmapData() {
-  const days = [];
-  const today = new Date();
-  const totalDays = 52 * 7; // 364 days
-
-  for (let i = totalDays - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-
-    // Realistic distribution: clusters of submissions with occasional high volume
-    const dayOfWeek = d.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const rand = Math.sin(i * 0.15) + Math.cos(i * 0.08);
-
-    let count = 0;
-    if (rand > 0.4) {
-      count = Math.floor(((rand + 1) * 3) % 7);
-      if (isWeekend) count += 1;
-    }
-
-    days.push({
-      dateStr: d.toISOString().split("T")[0],
-      displayDate: d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      month: d.toLocaleString("en-US", { month: "short" }),
-      dayOfWeek,
-      count,
-    });
-  }
-
-  // Group into 52 weeks (columns), 7 rows each
-  const weeks = [];
-  for (let w = 0; w < 52; w++) {
-    weeks.push(days.slice(w * 7, (w + 1) * 7));
-  }
-
-  const totalSubs = days.reduce((acc, curr) => acc + curr.count, 0);
-  const activeDays = days.filter((d) => d.count > 0).length;
-
-  return { weeks, days, totalSubs, activeDays };
-}
+import { BsFire, BsCoin, BsTrophy } from "react-icons/bs";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { username: routeUsername } = useParams();
 
-  // User state
-  const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(() => {
+  // Authentication & session user
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [cachedProfile, setCachedProfile] = useState(() => {
     try {
       const stored = localStorage.getItem("user_profile");
       return stored ? JSON.parse(stored) : null;
@@ -238,23 +51,79 @@ const UserDashboard = () => {
       return null;
     }
   });
-  const [submissionTab, setSubmissionTab] = useState("all");
-  const [hoveredDay, setHoveredDay] = useState(null);
 
-  // Load user
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        setUser(JSON.parse(stored));
-      }
-    } catch {
-      // ignore
+  // Live state from server
+  const [liveProfile, setLiveProfile] = useState(null);
+  const [liveSolvedMap, setLiveSolvedMap] = useState(null);
+  const [allQuestions, setAllQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  const [activeTab, setActiveTab] = useState("solved");
+
+  // Determine active username (URL parameter takes precedence, then session)
+  const sessionUsername =
+    cachedProfile?.username ||
+    currentUser?.username ||
+    (currentUser?.email ? currentUser.email.split("@")[0] : "");
+
+  const activeUsername = (routeUsername || sessionUsername || "").trim();
+
+  // Fetch real server data
+  const loadProfileData = useCallback(async () => {
+    if (!activeUsername) {
+      setIsLoading(false);
+      return;
     }
-  }, []);
 
-  // Compute Heatmap
-  const { weeks, totalSubs, activeDays } = useMemo(() => generateHeatmapData(), []);
+    setIsLoading(true);
+    setFetchError(null);
+
+    try {
+      const [statsResult, solvedResult, questionsResult] = await Promise.allSettled([
+        getUserStats(activeUsername),
+        getSolvedMap(activeUsername),
+        getAllQuestions(),
+      ]);
+
+      let errorEncountered = null;
+
+      // Handle user stats
+      if (statsResult.status === "fulfilled" && statsResult.value) {
+        setLiveProfile(statsResult.value);
+      } else if (statsResult.status === "rejected") {
+        console.warn("User stats fetch failed:", statsResult.reason);
+        errorEncountered = statsResult.reason?.message || "Failed to load user profile";
+      }
+
+      // Handle solved map
+      if (solvedResult.status === "fulfilled" && solvedResult.value) {
+        setLiveSolvedMap(solvedResult.value);
+      } else if (solvedResult.status === "rejected") {
+        console.warn("SolvedMap fetch failed:", solvedResult.reason);
+      }
+
+      // Handle system questions (for dynamic total question counts)
+      if (questionsResult.status === "fulfilled" && questionsResult.value) {
+        const qList = Array.isArray(questionsResult.value)
+          ? questionsResult.value
+          : questionsResult.value?.questions || questionsResult.value?.data || [];
+        setAllQuestions(qList);
+      }
+
+      if (errorEncountered && !liveProfile && !cachedProfile) {
+        setFetchError(errorEncountered);
+      }
+    } catch (err) {
+      console.error("Error loading profile:", err);
+      setFetchError(err.message || "Failed to load profile data");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeUsername]);
+
+  useEffect(() => {
+    loadProfileData();
+  }, [loadProfileData]);
 
   // Logout handler
   const handleLogout = async () => {
@@ -274,43 +143,56 @@ const UserDashboard = () => {
     }
   };
 
-  const stats = DUMMY_USER_STATS;
+  // Profile data resolution from server
+  const profile = liveProfile || cachedProfile || {};
+  const isOwnProfile =
+    !routeUsername ||
+    (sessionUsername && routeUsername.toLowerCase() === sessionUsername.toLowerCase());
 
-  // Active Username resolution
-  const sessionUsername =
-    userProfile?.username ||
-    user?.username ||
-    (user?.email ? user.email.split("@")[0] : null) ||
-    stats.profile.username;
+  const displayName = profile.name || (isOwnProfile ? currentUser?.name : "") || activeUsername;
+  const displayRole = profile.role || (isOwnProfile ? "Member" : "User");
+  const displayLocation = profile.location || "Not specified";
+  const displayWebsite = profile.website || "";
+  const displayGithub = profile.github || "";
+  const displayLinkedin = profile.linkedin || "";
+  const globalRank = profile.globalRank ?? 0;
+  const topPercentile = profile.topPercentile ?? 0;
+  const coins = profile.coins ?? 0;
+  const streak = liveSolvedMap?.currentStreak ?? profile.streak ?? 0;
+  const views = profile.views ?? 0;
 
-  // Priority to URL param, fallback to current logged in user
-  const activeUsername = routeUsername || sessionUsername;
+  // Question difficulty counts from real database questions
+  const totalQuestions = allQuestions.length;
+  const easyTotal = allQuestions.filter(
+    (q) => q.difficulty?.toLowerCase() === "easy"
+  ).length;
+  const mediumTotal = allQuestions.filter(
+    (q) => q.difficulty?.toLowerCase() === "medium"
+  ).length;
+  const hardTotal = allQuestions.filter(
+    (q) => q.difficulty?.toLowerCase() === "hard"
+  ).length;
 
-  // Redirect /profile to /profile/{username}
-  useEffect(() => {
-    if (!routeUsername && activeUsername) {
-      navigate(`/profile/${encodeURIComponent(activeUsername)}`, { replace: true });
-    }
-  }, [routeUsername, activeUsername, navigate]);
+  // Real solved counts from SolvedMap
+  const easySolved = Number(liveSolvedMap?.easySolved ?? 0);
+  const medSolved = Number(liveSolvedMap?.Medium ?? liveSolvedMap?.mediumSolved ?? 0);
+  const hardSolved = Number(liveSolvedMap?.Hard ?? liveSolvedMap?.hardSolved ?? 0);
+  const totalSolved = Number(
+    liveSolvedMap?.acceptedSolutions ??
+      profile.solvedQuestions?.length ??
+      (easySolved + medSolved + hardSolved)
+  );
+  const totalSubmissions = Number(liveSolvedMap?.totalSubmissions ?? 0);
+  const acceptanceRate =
+    totalSubmissions > 0
+      ? ((totalSolved / totalSubmissions) * 100).toFixed(1)
+      : "0.0";
 
-  // Is this the currently logged-in user's own profile?
-  const isOwnProfile = !routeUsername || routeUsername.toLowerCase() === sessionUsername.toLowerCase();
-
-  const userName = isOwnProfile
-    ? (userProfile?.name || user?.name || stats.profile.name)
-    : (activeUsername.charAt(0).toUpperCase() + activeUsername.slice(1));
-  const userEmail = isOwnProfile ? (userProfile?.email || user?.email || "dev@codeforge.io") : `${activeUsername}@codeforge.io`;
-  const userRole = isOwnProfile ? (userProfile?.role || user?.role || stats.profile.role) : stats.profile.role;
-  const userLocation = isOwnProfile ? (userProfile?.location || stats.profile.location) : stats.profile.location;
-  const userWebsite = isOwnProfile ? (userProfile?.website || stats.profile.website) : `https://github.com/${activeUsername}`;
-  const userGithub = isOwnProfile ? (userProfile?.github || stats.profile.github) : `https://github.com/${activeUsername}`;
-  const userLinkedin = isOwnProfile ? (userProfile?.linkedin || stats.profile.linkedin) : stats.profile.linkedin;
-
-  // Solved Percentages
-  const easyPct = Math.min(100, Math.round((stats.solvedStats.easy.solved / stats.solvedStats.easy.total) * 100));
-  const medPct = Math.min(100, Math.round((stats.solvedStats.medium.solved / stats.solvedStats.medium.total) * 100));
-  const hardPct = Math.min(100, Math.round((stats.solvedStats.hard.solved / stats.solvedStats.hard.total) * 100));
-  const totalPct = Math.min(100, Math.round((stats.solvedStats.totalSolved / stats.solvedStats.totalQuestions) * 100));
+  // Percentages calculated from real database questions
+  const easyPct = easyTotal > 0 ? Math.min(100, Math.round((easySolved / easyTotal) * 100)) : 0;
+  const medPct = mediumTotal > 0 ? Math.min(100, Math.round((medSolved / mediumTotal) * 100)) : 0;
+  const hardPct = hardTotal > 0 ? Math.min(100, Math.round((hardSolved / hardTotal) * 100)) : 0;
+  const totalPct = totalQuestions > 0 ? Math.min(100, Math.round((totalSolved / totalQuestions) * 100)) : 0;
 
   // Circular Chart math
   const radius = 64;
@@ -319,39 +201,80 @@ const UserDashboard = () => {
   const medDash = (medPct / 100) * circumference;
   const hardDash = (hardPct / 100) * circumference;
 
-  // Filter Submissions
-  const filteredSubmissions = useMemo(() => {
-    if (submissionTab === "accepted") {
-      return stats.recentSubmissions.filter((s) => s.status === "Accepted");
-    }
-    if (submissionTab === "wrong") {
-      return stats.recentSubmissions.filter((s) => s.status !== "Accepted");
-    }
-    return stats.recentSubmissions;
-  }, [submissionTab, stats.recentSubmissions]);
+  // Real languages from SolvedMap
+  const languages = useMemo(() => {
+    const langMap = liveSolvedMap?.languageSolve;
+    if (!langMap || typeof langMap !== "object") return [];
+    const entries =
+      langMap instanceof Map ? Array.from(langMap.entries()) : Object.entries(langMap);
+    const colorPalette = ["#38bdf8", "#a855f7", "#f97316", "#facc15", "#10b981", "#ec4899", "#6366f1"];
+    return entries
+      .filter(([_, count]) => Number(count) > 0)
+      .map(([name, count], i) => ({
+        name: name.toUpperCase(),
+        solved: Number(count),
+        color: colorPalette[i % colorPalette.length],
+      }));
+  }, [liveSolvedMap]);
 
-  // Months for heatmap header
-  const monthLabels = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-  ];
+  // Real topics from SolvedMap
+  const topics = useMemo(() => {
+    const topicMap = liveSolvedMap?.TopicSolved;
+    if (!topicMap || typeof topicMap !== "object") return [];
+    const entries =
+      topicMap instanceof Map ? Array.from(topicMap.entries()) : Object.entries(topicMap);
+    return entries
+      .filter(([_, count]) => Number(count) > 0)
+      .map(([name, count]) => ({
+        name: name.replace(/_/g, " "),
+        count: Number(count),
+      }));
+  }, [liveSolvedMap]);
+
+  // Real solved, liked, and starred questions lists
+  const solvedQuestionIds = useMemo(() => {
+    return Array.isArray(profile.solvedQuestions) ? profile.solvedQuestions : [];
+  }, [profile.solvedQuestions]);
+
+  const likedQuestionIds = useMemo(() => {
+    return Array.isArray(profile.likeQuestion) ? profile.likeQuestion : [];
+  }, [profile.likeQuestion]);
+
+  const starredQuestionIds = useMemo(() => {
+    return Array.isArray(profile.starQues) ? profile.starQues : [];
+  }, [profile.starQues]);
+
+  // Helper to resolve question object by ID
+  const getQuestionDetails = useCallback(
+    (qid) => {
+      return (
+        allQuestions.find(
+          (q) => String(q._id) === String(qid) || String(q.questionId) === String(qid)
+        ) || {
+          _id: qid,
+          questionId: qid,
+          title: `Question #${qid}`,
+          difficulty: "Standard",
+        }
+      );
+    },
+    [allQuestions]
+  );
 
   return (
     <div className="bg-[#020617] min-h-screen text-slate-100 font-sans selection:bg-green-500 selection:text-black">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-[#020617]/90 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Left: Brand & Main Navigation */}
+          {/* Brand & Navigation */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-black text-xl shadow-lg shadow-green-500/30 group-hover:scale-105 transition-transform">
                 &lt;/&gt;
               </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
-                  Code<span className="text-green-400">Forge</span>
-                </span>
-              </div>
+              <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
+                Code<span className="text-green-400">Forge</span>
+              </span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-300">
@@ -362,590 +285,620 @@ const UserDashboard = () => {
                 Problems
               </Link>
               <span className="px-3 py-1.5 rounded-lg text-white font-semibold bg-slate-800/80">
-                User Dashboard
+                User Profile
               </span>
             </nav>
           </div>
 
-          {/* Right: Badges, Coins & User Logout */}
+          {/* Right Status & Controls */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-amber-400">
-              <BsFire className="w-3.5 h-3.5 text-amber-400" />
-              <span>{stats.profile.streak} Days Streak</span>
-            </div>
+            {streak > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-amber-400">
+                <BsFire className="w-3.5 h-3.5 text-amber-400" />
+                <span>{streak} Days Streak</span>
+              </div>
+            )}
 
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-yellow-400">
-              <BsCoin className="w-3.5 h-3.5 text-yellow-400" />
-              <span>{stats.profile.coins}</span>
-            </div>
+            {coins > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-yellow-400">
+                <BsCoin className="w-3.5 h-3.5 text-yellow-400" />
+                <span>{coins}</span>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 pl-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-green-500 to-emerald-400 text-black font-extrabold text-xs flex items-center justify-center shadow-sm">
-                {userName.charAt(0).toUpperCase()}
+                {(displayName || activeUsername || "U").charAt(0).toUpperCase()}
               </div>
               <span className="text-sm font-semibold text-white hidden md:inline-block max-w-[120px] truncate">
-                {userName}
+                {displayName || activeUsername}
               </span>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#0f172a] hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border border-slate-700/80 hover:border-rose-500/40 transition ml-2"
-            >
-              Logout
-            </button>
+            {currentUser && (
+              <button
+                onClick={handleLogout}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#0f172a] hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border border-slate-700/80 hover:border-rose-500/40 transition ml-2"
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      {/* ── Main Profile & Dashboard Layout ─────────────────────────────────── */}
+      {/* ── Main Container ──────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* ══════════════════════════════════════════════════════════════════
-              LEFT SIDEBAR: USER PROFILE & BADGES (Col 4)
-             ══════════════════════════════════════════════════════════════════ */}
-          <aside className="lg:col-span-4 flex flex-col gap-6">
-            {/* User Profile Card */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-green-500/5 blur-[80px] rounded-full pointer-events-none" />
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="w-12 h-12 border-4 border-slate-800 border-t-green-400 rounded-full animate-spin" />
+            <p className="text-sm text-slate-400 font-mono">
+              Fetching profile data from server for @{activeUsername}...
+            </p>
+          </div>
+        )}
 
-              <div className="flex items-start gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-400 p-0.5 shadow-lg shadow-green-500/20">
-                    <div className="w-full h-full bg-[#020617] rounded-[14px] flex items-center justify-center text-green-400 font-black text-3xl">
-                      {userName.charAt(0).toUpperCase()}
+        {/* Server Fetch Error Banner */}
+        {!isLoading && fetchError && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <FiAlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-200">Notice from Server</p>
+                <p className="text-xs text-amber-300/90 mt-0.5 font-mono">{fetchError}</p>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Note: Backend endpoints <code className="text-amber-400 font-mono">/userstats/:username</code> require registered profile details in the database.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={loadProfileData}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
+            >
+              <FiRefreshCw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+          </div>
+        )}
+
+        {/* Content Layout */}
+        {!isLoading && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* ══════════════════════════════════════════════════════════════════
+                LEFT SIDEBAR: USER PROFILE & SOCIALS (Col 4)
+               ══════════════════════════════════════════════════════════════════ */}
+            <aside className="lg:col-span-4 flex flex-col gap-6">
+              {/* Profile Card */}
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                <div className="flex items-start gap-4">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-400 p-0.5 shadow-lg shadow-green-500/20">
+                      <div className="w-full h-full bg-[#020617] rounded-[14px] flex items-center justify-center text-green-400 font-black text-3xl">
+                        {(displayName || activeUsername || "U").charAt(0).toUpperCase()}
+                      </div>
                     </div>
                   </div>
-                  <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-[#0f172a] rounded-full" />
-                </div>
 
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-black text-white truncate">{userName}</h1>
-                  <p className="text-xs font-mono text-slate-400 mt-0.5 truncate">
-                    @{activeUsername}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-[11px] font-semibold uppercase tracking-wider">
-                      {userRole}
-                    </span>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <FiAward className="w-3.5 h-3.5 text-yellow-400" />
-                      Rank #{stats.profile.globalRank.toLocaleString()}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-xl font-black text-white truncate">{displayName}</h1>
+                    <p className="text-xs font-mono text-slate-400 mt-0.5 truncate">
+                      @{activeUsername}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-[11px] font-semibold uppercase tracking-wider">
+                        {displayRole}
+                      </span>
+                      {globalRank > 0 && (
+                        <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                          <FiAward className="w-3.5 h-3.5 text-yellow-400" />
+                          Rank #{globalRank.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action: Edit Profile */}
-              {isOwnProfile && (
-                <Link
-                  to="/profile-setup"
-                  className="w-full mt-5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition border border-slate-700/60"
-                >
-                  <FiEdit3 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Edit Profile</span>
-                </Link>
-              )}
+                {/* Edit Profile Action */}
+                {isOwnProfile && (
+                  <Link
+                    to="/profile-setup"
+                    className="w-full mt-5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition border border-slate-700/60"
+                  >
+                    <FiEdit3 className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Edit Profile Details</span>
+                  </Link>
+                )}
 
-              {/* User Bio & Meta */}
-              <div className="mt-6 pt-5 border-t border-slate-800/80 space-y-2.5 text-xs text-slate-400">
-                <div className="flex items-center gap-2">
-                  <FiMapPin className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{userLocation}</span>
-                </div>
-                {userWebsite && (
+                {/* Profile Meta & Links */}
+                <div className="mt-6 pt-5 border-t border-slate-800/80 space-y-2.5 text-xs text-slate-400">
                   <div className="flex items-center gap-2">
-                    <FiGlobe className="w-3.5 h-3.5 text-slate-500" />
-                    <a href={userWebsite} target="_blank" rel="noreferrer" className="hover:text-green-400 transition truncate">
-                      {userWebsite.replace(/^https?:\/\//, "")}
-                    </a>
+                    <FiMapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate">{displayLocation}</span>
                   </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <FiGithub className="w-3.5 h-3.5 text-slate-500" />
-                  <a href={userGithub} target="_blank" rel="noreferrer" className="hover:text-green-400 transition truncate">
-                    {userGithub.replace(/^https?:\/\//, "")}
-                  </a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FiLinkedin className="w-3.5 h-3.5 text-slate-500" />
-                  <a href={userLinkedin} target="_blank" rel="noreferrer" className="hover:text-green-400 transition truncate">
-                    {userLinkedin.replace(/^https?:\/\//, "")}
-                  </a>
-                </div>
-              </div>
 
-              {/* Community Rank & Upvotes */}
-              <div className="grid grid-cols-2 gap-3 mt-6 pt-5 border-t border-slate-800/80 text-center">
-                <div className="bg-[#020617] rounded-xl p-3 border border-slate-800">
-                  <p className="text-[11px] text-slate-400 font-medium">Top Percentile</p>
-                  <p className="text-lg font-black text-green-400 mt-1">Top {stats.profile.topPercentile}%</p>
-                </div>
-                <div className="bg-[#020617] rounded-xl p-3 border border-slate-800">
-                  <p className="text-[11px] text-slate-400 font-medium">Solution Upvotes</p>
-                  <p className="text-lg font-black text-amber-400 mt-1">{stats.profile.solutionUpvotes}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Badges Shelf */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <BsTrophy className="w-4 h-4 text-amber-400" />
-                  <span>Badges & Honors</span>
-                </h2>
-                <span className="text-xs text-slate-400 font-mono">{stats.badges.length} Total</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                {stats.badges.map((badge, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 bg-[#020617] border border-slate-800 rounded-2xl flex flex-col items-center text-center group hover:border-slate-700 transition"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2 group-hover:scale-110 transition-transform">
-                      <BsShieldCheck className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <span className="text-xs font-bold text-white line-clamp-1">{badge.title}</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">{badge.date}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Languages Used */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2 pb-4 border-b border-slate-800">
-                <FiCode className="w-4 h-4 text-green-400" />
-                <span>Languages Solved</span>
-              </h2>
-
-              <div className="mt-4 space-y-3">
-                {stats.languages.map((lang, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
+                  {displayWebsite && (
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: lang.color }} />
-                      <span className="font-semibold text-slate-200">{lang.name}</span>
+                      <FiGlobe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <a
+                        href={displayWebsite}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-green-400 transition truncate text-slate-300"
+                      >
+                        {displayWebsite.replace(/^https?:\/\//, "")}
+                      </a>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-400 font-mono">
-                      <span className="font-bold text-white">{lang.solved}</span>
-                      <span>problems</span>
+                  )}
+
+                  {displayGithub && (
+                    <div className="flex items-center gap-2">
+                      <FiGithub className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <a
+                        href={displayGithub}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-green-400 transition truncate text-slate-300"
+                      >
+                        {displayGithub.replace(/^https?:\/\//, "")}
+                      </a>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  )}
 
-            {/* Skills & Problem Topics */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2 pb-4 border-b border-slate-800">
-                <FiLayers className="w-4 h-4 text-blue-400" />
-                <span>Top Solved Topics</span>
-              </h2>
-
-              <div className="flex flex-wrap gap-2 mt-4">
-                {stats.skills.map((skill, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#020617] border border-slate-800 text-xs font-medium text-slate-300 hover:border-slate-700 transition"
-                  >
-                    <span>{skill.name}</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] text-green-400 font-bold">
-                      {skill.count}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          {/* ══════════════════════════════════════════════════════════════════
-              RIGHT COLUMN: GRAPHS & SUBMISSIONS (Col 8)
-             ══════════════════════════════════════════════════════════════════ */}
-          <main className="lg:col-span-8 flex flex-col gap-8">
-            {/* ─────────────────────────────────────────────────────────────
-                SECTION 1: SUBMITTED QUESTIONS PROGRESS GRAPH ("submiited questiongrph")
-               ───────────────────────────────────────────────────────────── */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-2">
-                <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-2">
-                    <FiBarChart2 className="w-5 h-5 text-green-400" />
-                    <span>Solved Problems Analytics</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Real-time question breakdown and acceptance metrics
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold">
-                    Beats {stats.solvedStats.beatsPercentage}% of users
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center mt-6">
-                {/* Circular Donut Graph */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center p-4">
-                  <div className="relative w-44 h-44 flex items-center justify-center">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                      {/* Background circle */}
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r={radius}
-                        fill="transparent"
-                        stroke="#1e293b"
-                        strokeWidth="12"
-                      />
-                      {/* Hard solved segment (Red/Rose) */}
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r={radius}
-                        fill="transparent"
-                        stroke="#ef4444"
-                        strokeWidth="12"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={circumference - hardDash * 0.3}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000"
-                      />
-                      {/* Medium solved segment (Amber/Yellow) */}
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r={radius}
-                        fill="transparent"
-                        stroke="#eab308"
-                        strokeWidth="12"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={circumference - medDash * 0.5}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000"
-                      />
-                      {/* Easy solved segment (Green) */}
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r={radius}
-                        fill="transparent"
-                        stroke="#22c55e"
-                        strokeWidth="12"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={circumference - easyDash * 0.7}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000"
-                      />
-                    </svg>
-
-                    {/* Donut Center Label */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                      <span className="text-3xl font-black text-white tracking-tight">
-                        {stats.solvedStats.totalSolved}
-                      </span>
-                      <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                        Solved
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        of {stats.solvedStats.totalQuestions}
-                      </span>
+                  {displayLinkedin && (
+                    <div className="flex items-center gap-2">
+                      <FiLinkedin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <a
+                        href={displayLinkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-green-400 transition truncate text-slate-300"
+                      >
+                        {displayLinkedin.replace(/^https?:\/\//, "")}
+                      </a>
                     </div>
-                  </div>
-
-                  <span className="text-xs text-slate-400 font-medium mt-3">
-                    Acceptance Rate: <strong className="text-slate-200">{stats.solvedStats.acceptanceRate}%</strong>
-                  </span>
+                  )}
                 </div>
 
-                {/* Difficulty Progress Bars */}
-                <div className="md:col-span-7 flex flex-col gap-4">
-                  {/* Easy Bar */}
-                  <div className="bg-[#020617] p-3.5 rounded-2xl border border-slate-800">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-bold text-green-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-green-400" />
-                        Easy
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-white font-bold">
-                          {stats.solvedStats.easy.solved}{" "}
-                          <span className="text-slate-500 font-normal">/ {stats.solvedStats.easy.total}</span>
-                        </span>
-                        <span className="text-[10px] text-slate-400">Beats {stats.solvedStats.easy.beats}%</span>
-                      </div>
-                    </div>
-                    <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-green-500 rounded-full transition-all duration-700"
-                        style={{ width: `${easyPct}%` }}
-                      />
-                    </div>
+                {/* Community Metrics (Only displayed if provided by server) */}
+                <div className="grid grid-cols-2 gap-3 mt-6 pt-5 border-t border-slate-800/80 text-center">
+                  <div className="bg-[#020617] rounded-xl p-3 border border-slate-800">
+                    <p className="text-[11px] text-slate-400 font-medium">Profile Views</p>
+                    <p className="text-lg font-black text-blue-400 mt-1 font-mono">{views}</p>
                   </div>
-
-                  {/* Medium Bar */}
-                  <div className="bg-[#020617] p-3.5 rounded-2xl border border-slate-800">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-bold text-yellow-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-yellow-400" />
-                        Medium
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-white font-bold">
-                          {stats.solvedStats.medium.solved}{" "}
-                          <span className="text-slate-500 font-normal">/ {stats.solvedStats.medium.total}</span>
-                        </span>
-                        <span className="text-[10px] text-slate-400">Beats {stats.solvedStats.medium.beats}%</span>
-                      </div>
-                    </div>
-                    <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-yellow-500 rounded-full transition-all duration-700"
-                        style={{ width: `${medPct}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Hard Bar */}
-                  <div className="bg-[#020617] p-3.5 rounded-2xl border border-slate-800">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="font-bold text-rose-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-rose-400" />
-                        Hard
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-white font-bold">
-                          {stats.solvedStats.hard.solved}{" "}
-                          <span className="text-slate-500 font-normal">/ {stats.solvedStats.hard.total}</span>
-                        </span>
-                        <span className="text-[10px] text-slate-400">Beats {stats.solvedStats.hard.beats}%</span>
-                      </div>
-                    </div>
-                    <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-rose-500 rounded-full transition-all duration-700"
-                        style={{ width: `${hardPct}%` }}
-                      />
-                    </div>
+                  <div className="bg-[#020617] rounded-xl p-3 border border-slate-800">
+                    <p className="text-[11px] text-slate-400 font-medium">Current Streak</p>
+                    <p className="text-lg font-black text-amber-400 mt-1 font-mono">{streak} Days</p>
                   </div>
                 </div>
               </div>
 
-              {/* Bottom Quick Metric Pills */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-800 text-center">
-                <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
-                  <span className="text-[11px] text-slate-400">Total Submissions</span>
-                  <p className="text-base font-black text-white mt-0.5">{stats.solvedStats.totalSubmissions}</p>
-                </div>
-                <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
-                  <span className="text-[11px] text-slate-400">Accepted Solutions</span>
-                  <p className="text-base font-black text-green-400 mt-0.5">{stats.solvedStats.acceptedSubmissions}</p>
-                </div>
-                <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
-                  <span className="text-[11px] text-slate-400">Current Streak</span>
-                  <p className="text-base font-black text-amber-400 mt-0.5">{stats.profile.streak} Days</p>
-                </div>
-                <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
-                  <span className="text-[11px] text-slate-400">Profile Views</span>
-                  <p className="text-base font-black text-blue-400 mt-0.5">{stats.profile.views}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* ─────────────────────────────────────────────────────────────
-                SECTION 2: ACTIVITY SUBMISSION HEATMAP GRAPH ("keatest graph")
-               ───────────────────────────────────────────────────────────── */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-3">
-                <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-2">
-                    <FiActivity className="w-5 h-5 text-emerald-400" />
-                    <span>Submission Heatmap Activity</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    <strong className="text-white">{totalSubs} submissions</strong> across {activeDays} active days in the last year
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-xl bg-slate-800 text-xs font-bold text-white border border-slate-700">
-                    Year 2026
-                  </span>
-                  <span className="px-3 py-1 rounded-xl bg-[#020617] text-xs font-medium text-slate-400 border border-slate-800 cursor-pointer hover:text-white transition">
-                    2025
-                  </span>
-                </div>
-              </div>
-
-              {/* Heatmap Tooltip Bar */}
-              <div className="h-6 mt-3 flex items-center text-xs text-slate-400 font-mono">
-                {hoveredDay ? (
-                  <span className="text-green-400 font-bold">
-                    {hoveredDay.count > 0 ? `${hoveredDay.count} submissions on ${hoveredDay.displayDate}` : `No submissions on ${hoveredDay.displayDate}`}
-                  </span>
-                ) : (
-                  <span className="text-slate-500">Hover over any square to see activity detail</span>
-                )}
-              </div>
-
-              {/* Heatmap Container */}
-              <div className="overflow-x-auto pb-2 pt-1 scrollbar-thin">
-                <div className="min-w-[700px] flex flex-col gap-1.5">
-                  {/* Month header row */}
-                  <div className="flex justify-between text-[10px] text-slate-400 font-mono px-2">
-                    {monthLabels.map((m, idx) => (
-                      <span key={idx}>{m}</span>
-                    ))}
+              {/* Languages Used (From SolvedMap) */}
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h2 className="text-sm font-bold text-white flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <FiCode className="w-4 h-4 text-green-400" />
+                    <span>Languages Solved</span>
                   </div>
-
-                  {/* 52 columns x 7 rows grid */}
-                  <div className="flex gap-1">
-                    {weeks.map((week, wIdx) => (
-                      <div key={wIdx} className="flex flex-col gap-1">
-                        {week.map((day, dIdx) => {
-                          // Determine color intensity
-                          let bg = "bg-[#1e293b]"; // 0
-                          if (day.count === 1) bg = "bg-emerald-800";
-                          else if (day.count === 2) bg = "bg-emerald-600";
-                          else if (day.count >= 3 && day.count < 5) bg = "bg-green-500";
-                          else if (day.count >= 5) bg = "bg-emerald-400 shadow-sm shadow-emerald-400/50";
-
-                          return (
-                            <div
-                              key={dIdx}
-                              onMouseEnter={() => setHoveredDay(day)}
-                              onMouseLeave={() => setHoveredDay(null)}
-                              className={`w-3 h-3 rounded-[3px] ${bg} transition-colors cursor-pointer hover:ring-2 hover:ring-white`}
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Heatmap Legend */}
-              <div className="flex items-center justify-between text-xs text-slate-400 mt-4 pt-4 border-t border-slate-800">
-                <div className="flex items-center gap-4 text-[11px]">
-                  <span>Total Active Days: <strong className="text-white">{activeDays}</strong></span>
-                  <span>Max Streak: <strong className="text-amber-400">36 Days</strong></span>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-[11px]">
-                  <span>Less</span>
-                  <div className="w-3 h-3 rounded-[3px] bg-[#1e293b]" />
-                  <div className="w-3 h-3 rounded-[3px] bg-emerald-800" />
-                  <div className="w-3 h-3 rounded-[3px] bg-emerald-600" />
-                  <div className="w-3 h-3 rounded-[3px] bg-green-500" />
-                  <div className="w-3 h-3 rounded-[3px] bg-emerald-400" />
-                  <span>More</span>
-                </div>
-              </div>
-            </div>
-
-            {/* ─────────────────────────────────────────────────────────────
-                SECTION 3: RECENT SUBMISSIONS LIST
-               ───────────────────────────────────────────────────────────── */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-3">
-                <h2 className="text-lg font-black text-white flex items-center gap-2">
-                  <FiFileText className="w-5 h-5 text-blue-400" />
-                  <span>Recent Submissions</span>
+                  <span className="text-xs text-slate-400 font-mono">{languages.length}</span>
                 </h2>
 
-                {/* Filter Tabs */}
-                <div className="flex items-center gap-1 bg-[#020617] p-1 rounded-xl border border-slate-800">
-                  <button
-                    onClick={() => setSubmissionTab("all")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                      submissionTab === "all"
-                        ? "bg-slate-800 text-white"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setSubmissionTab("accepted")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                      submissionTab === "accepted"
-                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    Accepted
-                  </button>
-                  <button
-                    onClick={() => setSubmissionTab("wrong")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                      submissionTab === "wrong"
-                        ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    Wrong Answer
-                  </button>
-                </div>
-              </div>
-
-              {/* Submissions List */}
-              <div className="divide-y divide-slate-800/80 mt-2">
-                {filteredSubmissions.map((sub) => {
-                  const isAccepted = sub.status === "Accepted";
-                  const diffColor =
-                    sub.difficulty === "Easy"
-                      ? "text-green-400 bg-green-500/10 border-green-500/20"
-                      : sub.difficulty === "Medium"
-                      ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
-                      : "text-rose-400 bg-rose-500/10 border-rose-500/20";
-
-                  return (
-                    <div
-                      key={sub.id}
-                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/20 px-3 rounded-xl transition"
-                    >
-                      <div className="flex items-center gap-3">
-                        {isAccepted ? (
-                          <FiCheckCircle className="w-5 h-5 text-green-400 shrink-0" />
-                        ) : (
-                          <FiXCircle className="w-5 h-5 text-rose-400 shrink-0" />
-                        )}
-
-                        <div>
-                          <Link
-                            to={`/problem/${sub.questionId}`}
-                            className="font-bold text-white text-sm hover:text-green-400 transition flex items-center gap-1.5"
-                          >
-                            <span>{sub.title}</span>
-                            <FiExternalLink className="w-3 h-3 text-slate-500" />
-                          </Link>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-slate-400 font-mono">
-                            <span className={`px-2 py-0.2 rounded-full border text-[10px] font-semibold ${diffColor}`}>
-                              {sub.difficulty}
-                            </span>
-                            <span>&bull;</span>
-                            <span className="text-slate-300 font-semibold">{sub.language}</span>
-                            <span>&bull;</span>
-                            <span>Runtime: {sub.runtime}</span>
-                          </div>
+                {languages.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic mt-4">
+                    No solved language data recorded yet.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {languages.map((lang, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: lang.color }}
+                          />
+                          <span className="font-semibold text-slate-200">{lang.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-400 font-mono">
+                          <span className="font-bold text-white">{lang.solved}</span>
+                          <span>solved</span>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                      <div className="flex sm:flex-col sm:items-end justify-between text-xs text-slate-500 font-mono pl-8 sm:pl-0">
-                        <span className={isAccepted ? "text-green-400 font-bold" : "text-rose-400 font-bold"}>
-                          {sub.status}
+              {/* Solved Topics (From SolvedMap) */}
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h2 className="text-sm font-bold text-white flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <FiLayers className="w-4 h-4 text-blue-400" />
+                    <span>Solved Topics</span>
+                  </div>
+                  <span className="text-xs text-slate-400 font-mono">{topics.length}</span>
+                </h2>
+
+                {topics.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic mt-4">
+                    No topic distribution recorded yet.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {topics.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#020617] border border-slate-800 text-xs font-medium text-slate-300"
+                      >
+                        <span>{skill.name}</span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] text-green-400 font-bold">
+                          {skill.count}
                         </span>
-                        <span className="text-[11px] text-slate-500 mt-0.5">{sub.timeAgo}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </aside>
+
+            {/* ══════════════════════════════════════════════════════════════════
+                RIGHT MAIN CONTENT: STATS & LISTS (Col 8)
+               ══════════════════════════════════════════════════════════════════ */}
+            <main className="lg:col-span-8 flex flex-col gap-8">
+              {/* Solved Problems Analytics */}
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-2">
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <FiBarChart2 className="w-5 h-5 text-green-400" />
+                      <span>Solved Problems Analytics</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Calculated from real question bank and submission records
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold font-mono">
+                      Acceptance: {acceptanceRate}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center mt-6">
+                  {/* Circular Donut Graph */}
+                  <div className="md:col-span-5 flex flex-col items-center justify-center p-4">
+                    <div className="relative w-44 h-44 flex items-center justify-center">
+                      <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+                        {/* Background circle */}
+                        <circle
+                          cx="80"
+                          cy="80"
+                          r={radius}
+                          fill="transparent"
+                          stroke="#1e293b"
+                          strokeWidth="12"
+                        />
+                        {/* Hard segment */}
+                        <circle
+                          cx="80"
+                          cy="80"
+                          r={radius}
+                          fill="transparent"
+                          stroke="#ef4444"
+                          strokeWidth="12"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={circumference - hardDash * 0.3}
+                          strokeLinecap="round"
+                          className="transition-all duration-700"
+                        />
+                        {/* Medium segment */}
+                        <circle
+                          cx="80"
+                          cy="80"
+                          r={radius}
+                          fill="transparent"
+                          stroke="#eab308"
+                          strokeWidth="12"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={circumference - medDash * 0.5}
+                          strokeLinecap="round"
+                          className="transition-all duration-700"
+                        />
+                        {/* Easy segment */}
+                        <circle
+                          cx="80"
+                          cy="80"
+                          r={radius}
+                          fill="transparent"
+                          stroke="#22c55e"
+                          strokeWidth="12"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={circumference - easyDash * 0.7}
+                          strokeLinecap="round"
+                          className="transition-all duration-700"
+                        />
+                      </svg>
+
+                      {/* Donut Center Label */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <span className="text-3xl font-black text-white tracking-tight font-mono">
+                          {totalSolved}
+                        </span>
+                        <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                          Solved
+                        </span>
+                        {totalQuestions > 0 && (
+                          <span className="text-[10px] text-slate-500 font-mono mt-0.5">
+                            of {totalQuestions}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
+
+                    <span className="text-xs text-slate-400 font-medium mt-3 font-mono">
+                      Total Submissions: <strong className="text-slate-200">{totalSubmissions}</strong>
+                    </span>
+                  </div>
+
+                  {/* Difficulty Progress Bars */}
+                  <div className="md:col-span-7 flex flex-col gap-4">
+                    {/* Easy Bar */}
+                    <div className="bg-[#020617] p-3.5 rounded-2xl border border-slate-800">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-bold text-green-400 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-green-400" />
+                          Easy
+                        </span>
+                        <span className="font-mono text-white font-bold">
+                          {easySolved}{" "}
+                          <span className="text-slate-500 font-normal">/ {easyTotal}</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-500 rounded-full transition-all duration-700"
+                          style={{ width: `${easyPct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Medium Bar */}
+                    <div className="bg-[#020617] p-3.5 rounded-2xl border border-slate-800">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-bold text-yellow-400 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                          Medium
+                        </span>
+                        <span className="font-mono text-white font-bold">
+                          {medSolved}{" "}
+                          <span className="text-slate-500 font-normal">/ {mediumTotal}</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-yellow-500 rounded-full transition-all duration-700"
+                          style={{ width: `${medPct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Hard Bar */}
+                    <div className="bg-[#020617] p-3.5 rounded-2xl border border-slate-800">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-bold text-rose-400 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-400" />
+                          Hard
+                        </span>
+                        <span className="font-mono text-white font-bold">
+                          {hardSolved}{" "}
+                          <span className="text-slate-500 font-normal">/ {hardTotal}</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-rose-500 rounded-full transition-all duration-700"
+                          style={{ width: `${hardPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Quick Metric Pills */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-800 text-center font-mono">
+                  <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
+                    <span className="text-[11px] text-slate-400 font-sans">Total Submissions</span>
+                    <p className="text-base font-black text-white mt-0.5">{totalSubmissions}</p>
+                  </div>
+                  <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
+                    <span className="text-[11px] text-slate-400 font-sans">Accepted Solutions</span>
+                    <p className="text-base font-black text-green-400 mt-0.5">{totalSolved}</p>
+                  </div>
+                  <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
+                    <span className="text-[11px] text-slate-400 font-sans">Current Streak</span>
+                    <p className="text-base font-black text-amber-400 mt-0.5">{streak} Days</p>
+                  </div>
+                  <div className="p-2.5 bg-[#020617] rounded-xl border border-slate-800/80">
+                    <span className="text-[11px] text-slate-400 font-sans">Starred Problems</span>
+                    <p className="text-base font-black text-yellow-400 mt-0.5">{starredQuestionIds.length}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </main>
-        </div>
+
+              {/* User Question Lists (Solved, Liked, Starred) */}
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800 gap-3">
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <FiFileText className="w-5 h-5 text-blue-400" />
+                    <span>Question Activity</span>
+                  </h2>
+
+                  {/* Tabs: Solved, Liked, Starred */}
+                  <div className="flex items-center gap-1 bg-[#020617] p-1 rounded-xl border border-slate-800 text-xs">
+                    <button
+                      onClick={() => setActiveTab("solved")}
+                      className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+                        activeTab === "solved"
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <FiCheckCircle className="w-3.5 h-3.5" />
+                      <span>Solved ({solvedQuestionIds.length})</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("liked")}
+                      className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+                        activeTab === "liked"
+                          ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <FiHeart className="w-3.5 h-3.5" />
+                      <span>Liked ({likedQuestionIds.length})</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("starred")}
+                      className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+                        activeTab === "starred"
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <FiStar className="w-3.5 h-3.5" />
+                      <span>Starred ({starredQuestionIds.length})</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tab Content Display */}
+                <div className="mt-4">
+                  {/* Solved Questions Tab */}
+                  {activeTab === "solved" && (
+                    <div>
+                      {solvedQuestionIds.length === 0 ? (
+                        <div className="py-12 text-center text-slate-500">
+                          <FiCheckCircle className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+                          <p className="text-sm">No solved questions recorded yet for @{activeUsername}.</p>
+                          <Link
+                            to="/dashboard"
+                            className="inline-block mt-3 text-xs text-green-400 hover:underline"
+                          >
+                            Explore Questions &rarr;
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-800/80">
+                          {solvedQuestionIds.map((qid, idx) => {
+                            const q = getQuestionDetails(qid);
+                            return (
+                              <div
+                                key={idx}
+                                className="py-3 flex items-center justify-between hover:bg-slate-800/20 px-3 rounded-xl transition"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FiCheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                                  <div>
+                                    <Link
+                                      to={`/problem/${q._id || q.questionId}`}
+                                      className="font-semibold text-white text-sm hover:text-green-400 transition flex items-center gap-1.5"
+                                    >
+                                      <span>{q.title || `Problem #${qid}`}</span>
+                                      <FiExternalLink className="w-3 h-3 text-slate-500" />
+                                    </Link>
+                                    {q.difficulty && (
+                                      <span className="text-[10px] text-slate-400 font-mono">
+                                        Difficulty: {q.difficulty}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="text-xs text-green-400 font-mono font-semibold">
+                                  Solved
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Liked Questions Tab */}
+                  {activeTab === "liked" && (
+                    <div>
+                      {likedQuestionIds.length === 0 ? (
+                        <div className="py-12 text-center text-slate-500">
+                          <FiHeart className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+                          <p className="text-sm">No liked questions recorded yet.</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-800/80">
+                          {likedQuestionIds.map((qid, idx) => {
+                            const q = getQuestionDetails(qid);
+                            return (
+                              <div
+                                key={idx}
+                                className="py-3 flex items-center justify-between hover:bg-slate-800/20 px-3 rounded-xl transition"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FiHeart className="w-4 h-4 text-rose-400 shrink-0" />
+                                  <Link
+                                    to={`/problem/${q._id || q.questionId}`}
+                                    className="font-semibold text-white text-sm hover:text-rose-400 transition flex items-center gap-1.5"
+                                  >
+                                    <span>{q.title || `Problem #${qid}`}</span>
+                                    <FiExternalLink className="w-3 h-3 text-slate-500" />
+                                  </Link>
+                                </div>
+                                <span className="text-xs text-rose-400 font-mono">Liked</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Starred Questions Tab */}
+                  {activeTab === "starred" && (
+                    <div>
+                      {starredQuestionIds.length === 0 ? (
+                        <div className="py-12 text-center text-slate-500">
+                          <FiStar className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+                          <p className="text-sm">No starred questions recorded yet.</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-800/80">
+                          {starredQuestionIds.map((qid, idx) => {
+                            const q = getQuestionDetails(qid);
+                            return (
+                              <div
+                                key={idx}
+                                className="py-3 flex items-center justify-between hover:bg-slate-800/20 px-3 rounded-xl transition"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FiStar className="w-4 h-4 text-amber-400 shrink-0" />
+                                  <Link
+                                    to={`/problem/${q._id || q.questionId}`}
+                                    className="font-semibold text-white text-sm hover:text-amber-400 transition flex items-center gap-1.5"
+                                  >
+                                    <span>{q.title || `Problem #${qid}`}</span>
+                                    <FiExternalLink className="w-3 h-3 text-slate-500" />
+                                  </Link>
+                                </div>
+                                <span className="text-xs text-amber-400 font-mono">Starred</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </main>
+          </div>
+        )}
       </div>
     </div>
   );

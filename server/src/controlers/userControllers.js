@@ -174,6 +174,8 @@ const UserDetails = async (req, res) => {
     try {
         const { username, name, role, location, website, github, linkedin } = req.body;
         const id = req.user;
+        console.log("id")
+        console.log(id)
         console.log(req.user)
         const CreateUserDetails = await userDetails.create({
             userId: id,
@@ -235,25 +237,10 @@ const userStats = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, msg: "User profile not found" });
         }
-        const userId = user.userId;
-        const id = req.user;
-        if (userId != id) {
-            res.status(400).json({
-                success: false,
-                msg: "sorry something went wrong"
-            })
-        }
 
-        const data = await userDetails.findById(id)
-        if (!data) {
-            return res.status(400).json({
-                success: false,
-                msg: "sorry not data found "
-            })
-        }
         return res.status(200).json({
             success: true,
-            msg: data
+            msg: user
         })
 
     } catch (error) {
@@ -274,18 +261,19 @@ const SolvedMap = async (req, res) => {
         }
         const userId = user.userId;
         const id = req.user;
-        if (userId != id) {
-            res.status(400).json({
-                success: false,
-                msg: "sorry something went wrong"
-            })
-        }
-        const data = await solvedmap.findOne({ userId })
+        let data = await solvedmap.findOne({ userId })
         if (!data) {
-            res.status(false).json({
-                success: false,
-                msg: "sorry not data found "
-            })
+            data = {
+                userId,
+                easySolved: 0,
+                Medium: 0,
+                Hard: 0,
+                totalSubmissions: 0,
+                acceptedSolutions: 0,
+                currentStreak: 0,
+                languageSolve: {},
+                TopicSolved: {}
+            };
         }
 
         res.status(200).json({

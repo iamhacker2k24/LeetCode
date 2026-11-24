@@ -275,6 +275,10 @@ const likeQues = async (req, res) => { // by usong this user can like or dis lik
                 $pull: { [isLike ? "dislikeQustion" : "likeQuestion"]: id }
             }
         );
+        return res.status(200).json({
+            success: true,
+            msg: isLike ? "Question liked" : "Question disliked"
+        });
 
     } catch (error) {
         console.log("error from questionSubmition")

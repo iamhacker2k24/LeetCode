@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
-import { getAllQuestions, logoutUser } from "../services/api";
+import { getAllQuestions, logoutUser, getUserStats } from "../services/api";
 import {
   FiSearch,
   FiX,
@@ -71,6 +71,29 @@ const Dashboard = () => {
       } else {
         setQuestions([]);
         setFetchError("Unexpected response format from server.");
+      }
+
+      // If user is logged in, fetch their solved questions from backend
+      const storedUser = localStorage.getItem("user");
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      const targetUsername = parsedUser?.username || user?.username;
+
+      if (targetUsername) {
+        try {
+          const profile = await getUserStats(targetUsername);
+          if (Array.isArray(profile?.solvedQuestions) && profile.solvedQuestions.length > 0) {
+            setSolvedIds((prev) => {
+              const merged = new Set(prev);
+              profile.solvedQuestions.forEach((qid) => {
+                merged.add(qid);
+                merged.add(Number(qid));
+              });
+              return merged;
+            });
+          }
+        } catch (profErr) {
+          console.warn("Could not load backend solved questions for user:", profErr);
+        }
       }
     } catch (err) {
       console.error("Failed to load questions:", err);

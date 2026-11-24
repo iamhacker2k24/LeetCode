@@ -155,9 +155,9 @@ const getOneques = async (req, res) => {
         const data = await Question.findOne({ questionId: Number(id) })
         if (!data) {
             console.log(data)
-            return res.status(500).json({
+            return res.status(404).json({
                 success: false,
-                message: "Internal server error"
+                message: "question not found "
             });
         }
 
@@ -344,7 +344,7 @@ const editTestCase = async (req, res) => {
 
 const deleteTestCase = async (req, res) => {
     try {
-        const id = req.params.id 
+        const id = req.params.id
         if (!id) {
             return res.status(400).json({
                 success: false,
@@ -417,7 +417,7 @@ const getTestCaseByid = async (req, res) => {
 
 const createCodeTemplate = async (req, res) => {
     try {
-        const id = req.params.id 
+        const id = req.params.id
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({
                 success: false,

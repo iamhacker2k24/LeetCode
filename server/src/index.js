@@ -27,16 +27,20 @@ app.use(cors({
 
 //authRouter
 app.use("/api/user", authRouter)
-app.use("/api/admin", middleWare, CheckRole("owner"), adminRouter)
+
+app.use("/api/admin/qs", quesRouter)
+app.use("/api/admin", middleWare, CheckRole("admin", "owner"), adminRouter)
+
+
+
 
 //question solved router 
 app.use("/api/user/qs", middleWare, CheckRole("user"), submittionRouter)
 
-app.use("/api/admin/qs", middleWare, quesRouter)
 
 
 //userDetailsRouter
-app.use("/api/user/details", userDetailsRoutes)
+app.use("/api/user/details", middleWare, userDetailsRoutes)
 
 
 

@@ -7,9 +7,9 @@ const createAdmin = async (req, res) => {
         //fisrt need ot find ethe user then make them admin ok 
         const update = await userData.findOneAndUpdate({ email }, { role: "admin" })
         if (!update) {
-            res.status(400).json({
+            res.status(404).json({
                 success: false,
-                msg: "sorry no user found "
+                msg: " user not  found "
 
             })
         }
