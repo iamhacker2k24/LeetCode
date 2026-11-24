@@ -4,11 +4,12 @@ const { createQues, editQues, deleteQues, getAllques, getOneques, getOnequesBySl
     CreateTestCse, editTestCase, deleteTestCase, getTestCaseByid, createCodeTemplate,
     editCodeTemplate, deleteCodeTemplate, getCodeTemplateByid } = require("../controlers/QuesControllers");
 const { userMiddleWare } = require("../middleWare/userMiddleWare");
+const { adminMiddleWare } = require("../middleWare/adminMiddleWare");
 
 
-quesRouter.post("/createques", createQues) //admin only 
-quesRouter.post("/editques/:id", editQues) //admin only 
-quesRouter.delete("/deleteques", deleteQues)  //admin only 
+quesRouter.post("/createques", adminMiddleWare, createQues) //admin only 
+quesRouter.post("/editques/:id", adminMiddleWare, editQues) //admin only 
+quesRouter.delete("/deleteques", adminMiddleWare ,deleteQues)  //admin only 
 
 
 
@@ -22,22 +23,22 @@ quesRouter.get("/getquesbyslung/:slug", getOnequesBySlug) //only specific questi
 
 
 //create test case  
-quesRouter.post("/createtestCse", CreateTestCse);
-quesRouter.post("/createtestcase", CreateTestCse);
-quesRouter.put("/edittestcase/:id", editTestCase);
-quesRouter.post("/edittestcase", editTestCase);
-quesRouter.delete("/deletetestcase/:id", deleteTestCase);
-quesRouter.delete("/deletetestcase", deleteTestCase);
-quesRouter.get("/gettestcasebyid/:id", getTestCaseByid); //get testCase by question id 
+quesRouter.post("/createtestCse", adminMiddleWare, CreateTestCse);
+quesRouter.post("/createtestcase", adminMiddleWare, CreateTestCse);
+quesRouter.put("/edittestcase/:id", adminMiddleWare, editTestCase);
+quesRouter.post("/edittestcase", adminMiddleWare, editTestCase);
+quesRouter.delete("/deletetestcase/:id", adminMiddleWare, deleteTestCase);
+quesRouter.delete("/deletetestcase", adminMiddleWare, deleteTestCase);
+quesRouter.get("/gettestcasebyid/:id", adminMiddleWare, getTestCaseByid); //get testCase by question id 
 
 
 
 //create code template
-quesRouter.post("/createcodetemplate/:id", createCodeTemplate);
-quesRouter.post("/createcodetemplate", createCodeTemplate);
-quesRouter.put("/editcodetemplate/:id", editCodeTemplate);
-quesRouter.delete("/deletecodetemplate/:id", deleteCodeTemplate);
-quesRouter.get("/getcodetemplatebyid/:id", getCodeTemplateByid);
+quesRouter.post("/createcodetemplate/:id", adminMiddleWare, createCodeTemplate);
+quesRouter.post("/createcodetemplate", adminMiddleWare, createCodeTemplate);
+quesRouter.put("/editcodetemplate/:id", adminMiddleWare, editCodeTemplate);
+quesRouter.delete("/deletecodetemplate/:id", adminMiddleWare, deleteCodeTemplate);
+quesRouter.get("/getcodetemplatebyid/:id", adminMiddleWare, getCodeTemplateByid);
 
 
 
